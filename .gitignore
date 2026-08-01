@@ -38,6 +38,16 @@ small_model_agent_harness.egg-info/
 *.cer
 *.token
 *.secret
+*.p8
+*.ppk
+*.asc
+*.gpg
+*.ovpn
+*.keychain
+id_rsa*
+id_ed25519*
+credentials*.json
+.npmrc
 
 # 参考文献 PDF（外部资产，来源见 ATTRIBUTIONS.md，按需本地保留，不随仓库分发）
 literature_archive/**/*.pdf
