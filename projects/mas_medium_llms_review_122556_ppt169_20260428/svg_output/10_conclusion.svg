@@ -1,0 +1,25 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A"/>
+    <stop offset="100%" stop-color="#1565C0"/>
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0"/>
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC"/>
+
+
+<rect x="0" y="0" width="1280" height="720" fill="#0B1F3A"/><rect x="0" y="0" width="1280" height="720" fill="#EAF2F8" fill-opacity="0.45"/>
+<use data-icon="phosphor-duotone/rocket-launch" x="600" y="74" width="80" height="80" fill="#22C1C3"/>
+<text x="640" y="210" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="44" font-weight="bold" fill="#FFFFFF">结论</text>
+<text x="640" y="270" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" fill="#FFFFFF">成熟的多智能体系统，不会简单追求模型越大越好</text>
+<rect x="190" y="336" width="900" height="58" rx="18" fill="#FFFFFF" fill-opacity="0.10" stroke="#22C1C3"/><text x="640" y="373" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFFFFF">1. 中小型大模型是基础执行层，不是超大模型替代品</text>
+<rect x="190" y="420" width="900" height="58" rx="18" fill="#FFFFFF" fill-opacity="0.10" stroke="#22C1C3"/><text x="640" y="457" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFFFFF">2. 最适合高频、明确、可编排、可治理的智能体节点</text>
+<rect x="190" y="504" width="900" height="58" rx="18" fill="#FFFFFF" fill-opacity="0.10" stroke="#22C1C3"/><text x="640" y="541" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFFFFF">3. 未来价值取决于模型、工具、知识、流程和安全协同</text>
+<text x="640" y="638" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#FFFFFF">谢谢观看</text><text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8"></text>
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">10 / 10</text>
+</svg>

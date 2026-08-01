@@ -1,0 +1,1384 @@
+arXiv:2504.07491v3  [cs.CV]  23 Jun 2025
+KIMI -VL T ECHNICAL REPORT
+Kimi Team
+ABSTRACT
+We present Kimi-VL, an efficient open-source Mixture-of-Experts (MoE) vision-language model
+(VLM) that offersadvanced multimodal reasoning, long-context understanding, and strong agent
+capabilities—all while activating only 2.8B parameters in its language decoder (Kimi-VL-A3B).
+Kimi-VL demonstrates strong performance across challenging domains: as a general-purpose VLM,
+Kimi-VL excels in multi-turn agent tasks (e.g., OSWorld), matching flagship models. Furthermore, it
+exhibits remarkable capabilities across diverse challenging vision language tasks, including college-
+level image and video comprehension, OCR, mathematical reasoning, multi-image understanding. In
+comparative evaluations, it effectively competes with cutting-edge efficient VLMs such as GPT-4o-
+mini, Qwen2.5-VL-7B, and Gemma-3-12B-IT, while surpassing GPT-4o in several key domains.
+Kimi-VL also advances in processing long contexts and perceiving clearly. With a 128K extended
+context window, Kimi-VL can process diverse long inputs, achieving impressive scores of 64.5 on
+LongVideoBench and 35.1 on MMLongBench-Doc. Its native-resolution vision encoder, MoonViT,
+further allows it to see and understand ultra-high-resolution visual inputs, achieving 83.2 on InfoVQA
+and 34.5 on ScreenSpot-Pro, while maintaining lower computational cost for common tasks.
+Building upon Kimi-VL, we introduce an advanced long-thinking variant: Kimi-VL-Thinking-2506.
+Developed through long chain-of-thought (CoT) supervised fine-tuning (SFT) and reinforcement learn-
+ing (RL), the latest model exhibits strong long-horizon reasoning capabilities (64.0 on MMMU, 46.3
+on MMMU-Pro, 56.9 on MathVision, 80.1 on MathVista, 65.2 on VideoMMMU) while obtaining ro-
+bust general abilities (84.4 on MMBench, 83.2 on V* and 52.8 on ScreenSpot-Pro). With only around
+3B activated parameters, it sets a new standard for efficient yet capable multimodal thinking models.
+Code and models are publicly accessible at https://github.com/MoonshotAI/Kimi-VL.
+3 10 30 70
+Activated Parameters (B)
+20
+35
+50
+65
+MathVision Pass@1
+Kimi-VL-A3B-Thinking
+Kimi-VL-A3B-Thinking-2506
+Qwen-2.5-VL-3B
+Qwen-2.5-VL-7B
+Qwen-2.5-VL-32B Qwen-2.5-VL-72B
+Gemma-3-4B-IT
+Gemma-3-12B-IT
+Gemma-3-27B-IT
+DeepSeek-VL2-A4.5B
+Llama-3.2-11B-Inst.
+QVQ-72B-Preview
+QVQ-Max-Preview
+Figure 1: Comparison between Kimi-VL-Thinking-2506 and frontier open-source VLMs, including short-thinking
+VLMs (e.g. Gemma-3 series, Qwen2.5-VL series) and long-thinking VLMs (QVQ-72B/Max-Preview), on MathVision
+benchmark. Our model achieves strong multimodal reasoning with just 2.8B LLM activated parameters.
+
+KIMI -VL T ECHNICAL REPORT
+60
+70
+80
+90
+MMBench-EN-v1.1
+74.6
+65.8
+77.1
+79.6
+82.6
+83.1
+▇ Kimi-VL-A3B ▇ Qwen2.5-VL-7B ▇ DeepSeek-VL2 ▇ Llama-3.2-11B-Inst. ▇ Gemma-3-12B-IT▇ GPT-4o
+40
+45
+50
+55
+60
+MMMU (val)
+59.6
+48
+60
+51.1
+58.6
+57
+38
+44
+50
+56
+62
+BLINK
+50.3
+39.8
+53.6
+56.4
+57.3
+40
+48
+56
+64
+72
+LongVideoBench Video-MME (w/o sub)
+58.2
+51.5
+46
+45.5
+64.8
+58.2
+65.1
+56
+67.8
+64.5
+8
+16
+24
+32
+40
+MMLongBench-Doc
+21.3
+13.8
+29
+29.6
+35.1
+0
+10
+20
+30
+40
+ScreenSpot-Pro
+0.8
+29
+34.5
+0
+2.5
+5
+7.5
+10
+OSWorld (Pass@1)
+5
+2.5
+8.2
+▇ GPT-4o-mini
+30
+45
+60
+75
+90
+InfoVQA
+43.8
+34.6
+57.9
+78.1
+82.6
+83.2
+GENERAL OCR MULTI-IMAGE
+AGENTLONG DOCLONG VIDEO
+Figure 2: Highlights of Kimi-VL performance for a wide range of benchmarks like, general benchmarks (MMMU,
+MMBench), OCR (InfoVQA), multi-image (BLINK), long video (LongVideoBench, Video-MME), long document
+(MMLongBench-Doc), and agent (ScreenSpot-Pro and OSWorld). Detailed results are presented in Table 3.
+1 Introduction
+With the rapid advancement of artificial intelligence, human expectations for AI assistants have transcended traditional
+language-only interactions, increasingly aligning with the inherently multimodal nature of our world. To better
+understand and interact with these expectations, new generations of natively multimodal models, such as GPT-
+4o (OpenAI et al. 2024) and Google Gemini (Gemini Team et al. 2024), have emerged with the capability to seamlessly
+perceive and interpret visual inputs alongside language processing. Most recently, advanced multimodal models,
+pioneered by OpenAI o1 series (OpenAI 2024) and Kimi k1.5 (K. Team et al. 2025), have further pushed these
+boundaries by incorporating deeper and longer reasoning on multimodal inputs, thereby tackling more complex
+problems in the multimodal domain.
+Nevertheless, development in large VLMs in the open-source community has significantly lagged behind their language-
+only counterparts, particularly in aspects of scalability, computational efficiency, and advanced reasoning capabilities.
+While language-only model DeepSeek R1 (DeepSeek-AI, D. Guo, et al. 2025) has already leveraged the efficient
+and more scalable mixture-of-experts (MoE) architecture and facilitated sophisticated long chain-of-thought (CoT)
+reasoning, most recent open-source VLMs, e.g. Qwen2.5-VL (Bai et al. 2025) and Gemma-3 (Gemma Team et al. 2025),
+continue to rely on dense architectures and do not support long-CoT reasoning. Early explorations into MoE-based
+vision-language models, such as DeepSeek-VL2 (Zhiyu Wu et al. 2024) and Aria (D. Li et al. 2024), exhibit limitations
+in other crucial dimensions. Architecturally, both models still adopt relatively traditional fixed-size vision encoders,
+hindering their adaptability to diverse visual inputs. From a capability perspective, DeepSeek-VL2 supports only a
+limited context length (4K), while Aria falls short in fine-grained visual tasks. Additionally, neither of them supports
+long-thinking abilities. Consequently, there remains a pressing need for an open-source VLM that effectively integrates
+structural innovation, stable capabilities, and enhanced reasoning through long-thinking.
+In light of this, we present Kimi-VL, a vision-language model for the open-source community. Structurally, Kimi-VL
+consists of our Moonlight (J. Liu et al. 2025a) MoE language model with only 2.8B activated (16B total) parameters,
+paired with a 400M native-resolution MoonViT vision encoder. In terms of capability, as illustrated in Figure 2,
+Kimi-VL can robustly handle diverse tasks (fine-grained perception, math, college-level problems, OCR, agent,etc.)
+across a broad spectrum of input forms (single-image, multi-image, video, long-document, etc.). Specifically, it features
+the following exciting abilities:
+2
+
+KIMI -VL T ECHNICAL REPORT
+Mixture-of-Experts (MoE)  
+Language Decoder
+1113px
+58px
+1731 pix
+800px
+UI SCREENSHOT
+OCR (SPECIAL ASPECT RATIO)
+270px
+480px
+LONG VIDEO
+FINE-GRAINED
+1008px
+672px
+SMALL  
+IMAGE
+50px
+20px
+MLP Projector
+···
+···
+···
+···
+···
+···
+···
+···
+···
+···
+What can you interpret from…
+<think> The user asked …
+ N×
+Attention Layer
+MoE FFN 
+··· ··· ···
+Non-shared Experts Shared Experts
+Router
+··· ··· ···
+MoonViT 
+(Native-resolution)
+35.4 
+Kimi-VL-A3B-Thinking
+Figure 3: The model architecture of Kimi-VL and Kimi-VL-Thinking, consisting of a MoonViT that allows native-
+resolution images, an MLP projector, and a Mixture-of-Experts (MoE) language decoder.
+1) Kimi-VL is smart: it has comparable text ability against efficient pure-text LLMs; without long thinking, Kimi-VL is
+already competitive in multimodal reasoning and multi-turn agent benchmarks, e.g., MMMU, MathVista, OSWorld.
+2) Kimi-VL processes long: it effectively tackles long-context understanding on various multimodal inputs within its
+128K context window, far ahead of similar-scale competitors on long video benchmarks and MMLongBench-Doc.
+3) Kimi-VL perceives clear: it shows all-round competitive ability over existing efficient dense and MoE VLMs in
+various vision-language scenarios: visual perception, visual world knowledge, OCR, high-resolution OS screenshot, etc.
+Furthermore, with long-CoT activation and reinforcement learning (RL), we introduce the long-thinking version
+of Kimi-VL, Kimi-VL-Thinking, which further substantially improves performance on more complex multimodal
+reasoning scenarios. Despite its small scale, Kimi-VL-Thinking offers compelling performance on hard reasoning
+benchmarks (e.g., MMMU, MathVision, MathVista), outperforming many state-of-the-art VLMs with even larger sizes.
+We further release and improved version of the thinking model, Kimi-VL-Thinking-2506. The improved version has
+even better performance on these reasoning benchmarks while retaining or improving on common visual perception and
+understanding scenarios, e.g. high-resolution perception (V*), OS grounding, video and long document understanding.
+2 Approach
+2.1 Model Architecture
+The architecture of Kimi-VL consists of three parts: a native-resolution vision encoder (MoonViT), an MLP projector,
+and an MoE language model, as depicted in Figure 3. We introduce each part in this section.
+MoonViT: A Native-resolution Vision Encoder We design MoonViT, the vision encoder of Kimi-VL, to natively
+process images at their varying resolutions, eliminating the need for complex sub-image splitting and splicing operations,
+as employed in LLaV A-OneVision (B. Li et al. 2024). We incorporate the packing method from NaViT (Dehghani
+et al. 2023), where images are divided into patches, flattened, and sequentially concatenated into 1D sequences. These
+3
+
+KIMI -VL T ECHNICAL REPORT
+Text Pre-training 5.2T data Pure Text Data Joint Pre-training 1.4T data Up to 40% Multimodal Data Progressive Multimodal RatioViT Training 2.0T -> 0.1T data CoCa-loss with tiny language decoder -> align to LLM
+Joint Cooldown 0.6T data High-quality Text & Multimodal Data Re-warmup to higher LR
+Joint Long-context 0.3T data Long Text & Long Video & Long Doc RoPE base: 50,000 -> 800,000
+resumes LR scheduler resumes LR scheduler
+Figure 4: The pre-training stages of Kimi-VL consume a total of 4.4T tokens after text-only pre-training of its language
+model. To preserve text abilities, all stages that update the language model are joint training stages.
+preprocessing operations enable MoonViT to share the same core computation operators and optimization as a language
+model, such as the variable-length sequence attention mechanism supported by FlashAttention (Dao et al. 2022),
+ensuring non-compromised training throughput for images of varying resolutions.
+MoonViT is initialized from and continually pre-trained on SigLIP-SO-400M (Zhai et al. 2023), which originally
+employs learnable fixed-size absolute positional embeddings to encode spatial information. While we interpolate
+these original position embeddings to better preserve SigLIP’s capabilities, these interpolated embeddings become
+increasingly inadequate as image resolution increases. To address this limitation, we incorporate 2D rotary positional
+embedding (RoPE) (J. Su et al. 2023) across the height and width dimensions, which improves the representation of
+fine-grained positional information, especially in high-resolution images. These two positional embedding approaches
+work together to encode spatial information for our model and seamlessly integrate with the flattening and packing
+procedures. This integration enables MoonViT to efficiently process images of varying resolutions within the same
+batch. The resulting continuous image features are then forwarded to the MLP projector and, ultimately, to the MoE
+language model for subsequent training stages. In Kimi-VL-A3B-Thinking-2506, we further continually train this
+MoonViT to authentically encode up to 3.2 million pixels from a single image, 4 times compared to the original limit.
+MLP Projector We employ a two-layer MLP to bridge the vision encoder (MoonViT) and the LLM. Specifically,
+we first use a pixel shuffle operation to compress the spatial dimension of the image features extracted by MoonViT,
+performing 2×2 downsampling in the spatial domain and correspondingly expanding the channel dimension. We then
+feed the pixel-shuffled features into a two-layer MLP to project them into the dimension of LLM embeddings.
+Mixture-of-Experts (MoE) Language Model The language model of Kimi-VL utilizes our Moonlight model (J. Liu
+et al. 2025a), an MoE language model with 2.8B activated parameters, 16B total parameters, and an architecture similar
+to DeepSeek-V3 (DeepSeek-AI, A. Liu, et al. 2025). For our implementation, we initialize from an intermediate
+checkpoint in Moonlight’s pre-training stage—one that has processed 5.2T tokens of pure text data and activated an
+8192-token (8K) context length. We then continue pre-training it using a joint recipe of multimodal and text-only data
+totaling 2.3T tokens, as detailed in Sec. 2.3.
+2.2 Muon Optimizer
+We use an enhanced Muon optimizer (J. Liu et al. 2025b) for model optimization. Compared to the original Muon
+optimizer (Jordan et al. 2024), we add weight decay and carefully adjust the per-parameter update scale. Additionally,
+we develop a distributed implementation of Muon following the ZeRO-1 (Rajbhandari et al. 2020) optimization strategy,
+which achieves optimal memory efficiency and reduced communication overhead while preserving the algorithm’s
+mathematical properties. This enhanced Muon optimizer is used throughout the entire training process to optimize all
+model parameters, including the vision encoder, the projector, and the language model.
+2.3 Pre-Training Stages
+As illustrated in Figure 4 and Table 1, after loading the intermediate language model discussed above, Kimi-VL’s
+pre-training comprises a total of 4 stages consuming 4.4T tokens overall: first, standalone ViT training to establish a
+robust native-resolution visual encoder, followed by three joint training stages (pre-training, cooldown, and long-context
+activation) that simultaneously enhance the model’s language and multimodal capabilities. The details are as follows.
+ViT Training Stages The MoonViT is trained on image-text pairs, where the text components consist of a variety of
+targets: image alt texts, synthetic captions, grounding bboxes, and OCR texts. The training incorporates two objectives:
+a SigLIP (Zhai et al. 2023) loss Lsiglip (a variant of contrastive loss) and a cross-entropy loss Lcaption for caption
+generation conditioned on input images. Following CoCa’s approach (J. Yu et al. 2022), the final loss function is
+4
+
+KIMI -VL T ECHNICAL REPORT
+Table 1: Overview of training stages: data composition, token volumes, sequence lengths, and trainable components.
+Stages ViT Training Joint Pre-training Joint Cooldown Joint Long-context
+Data Alt text + + +
+Synthesis Caption Text, Knowledge High-quality Text Long Text
+Grounding Interleaving High-quality Multimodal Long Video
+OCR Video, Agent Academic Sources Long Document
+Tokens 2T + 0.1T 1.4T 0.6T 0.3T
+Sequence length 8192 8192 8192 32768->131072
+Training ViT ViT & LLM ViT & LLM ViT & LLM
+Table 2: Needle-in-a-Haystack (NIAH) test on text/video haystacks, where needles are uniformly distributed at various
+positions within the haystack. We report recall accuracy across different haystack lengths up to 131,072 tokens (128K).
+Haystack Length (0, 2048] (2048 , 4096] (4096 , 8192] (8192 , 16384] (16384, 32768] (32768, 65536] (65536, 131072]
+- text haystack 100.0 100.0 100.0 100.0 100.0 100.0 87.0
+- video haystack 100.0 100.0 100.0 100.0 100.0 100.0 91.7
+formulated as L = Lsiglip + λLcaption, where λ = 2. Specifically, the image and text encoders compute the contrastive
+loss, while the text decoder performs next-token prediction (NTP) conditioned on features from the image encoder. To
+accelerate training, we initialized both encoders with SigLIP SO-400M (Zhai et al. 2023) weights and implemented
+a progressive resolution sampling strategy to gradually allow larger size; the text decoder is initialized from a tiny
+decoder-only language model. During training, we observed an emergence in the caption loss while scaling up OCR
+data, indicating that the text decoder had developed some OCR capabilities. After training the ViT in the CoCa-alike
+stage with 2T tokens, we align the MoonViT to the MoE language model using another 0.1T tokens, where only
+MoonViT and MLP projector are updated. This alignment stage significantly reduces the initial perplexity of MoonViT
+embeddings in the language model, allowing a smoother joint pre-training stage as follows.
+Joint Pre-training Stage In the joint pre-training stage, we train the model with a combination of pure text data
+(sampled from the same distribution as the initial language model) and a variety of multimodal data (as discussed in
+Sec. 3.1). We continue training from the loaded LLM checkpoint using the same learning rate scheduler, consuming
+an additional 1.4T tokens. The initial steps utilize solely language data, after which the proportion of multimodal
+data gradually increases. Through this progressive approach and the previous alignment stage, we observe that joint
+pre-training preserves the model’s language capabilities while successfully integrating visual comprehension abilities.
+Joint Cooldown Stage The stage following the pre-training stage is a multimodal cooldown phase, where the model
+is continue trained with high-quality language and multimodal datasets to ensure superior performance. For the
+language part, through empirical investigation, we observe that the incorporation of synthetic data during the cooling
+phase yields significant performance improvements, particularly in mathematical reasoning, knowledge-based tasks,
+and code generation. The general text components of the cooldown dataset are curated from high-fidelity subsets of
+the pre-training corpus. For math, knowledge, and code domains, we employ a hybrid approach: utilizing selected
+pre-training subsets while augmenting them with synthetically generated content. Specifically, we leverage existing
+mathematical knowledge and code corpora as source material to generate question-answer (QA) pairs through a
+proprietary language model, implementing rejection sampling techniques to maintain quality standards (Yue, Qu, et al.
+2023; D. Su et al. 2024). These synthesized QA pairs undergo comprehensive validation before being integrated into
+the cooldown dataset. For the multimodal part, in addition to the two strategies as employed in text cooldown data
+preparation, i.e. question-answer synthesis and high-quality subset replay, to allow more comprehensive visual-centric
+perception and understanding (B. Li et al. 2024; Tong et al. 2024; J. Guo et al. 2024), we filter and rewrite a variety
+of academic visual or vision-language data sources to QA pairs. Unlike post-training stages, these language and
+multimodal QA pairs in the cooldown stage are only included for activating specific abilities and henceforth facilitating
+learning high-quality data, thus, we keep their ratio at a low portion to avoid overfitting these QA patterns. The joint
+cooldown stage significantly improves both language and multimodal abilities of the model.
+Joint Long-context Activation Stage In the final pre-training stage, we extend the context length of the model from
+8192 (8K) to 131072 (128K), with the inverse frequency of its RoPE (J. Su et al. 2023) embeddings reset from 50,000
+5
+
+KIMI -VL T ECHNICAL REPORT
+Joint Supervised Fine-tuning Text + Multimodal SFT Data 1 Epoch@32K + 1 Epoch@128K
+Kimi-VL
+Kimi-VL-ThinkingLong-CoT Supervised Fine-tuning Text + Multimodal Long-CoT Data Planning, Evaluation, Reflection, Exploration
+Reinforcement Learning (RL) Online RL on Answer Only Length penalty, Difficulty control
+Figure 5: The post-training stages of Kimi-VL and Kimi-VL-Thinking, including two stages of joint SFT in 32K and
+128K context, and further long-CoT SFT and RL stages to activate and enhance long thinking abilities.
+to 800,000. The joint long-context stage is conducted in two sub-stages, where each one extends the model’s context
+length by four times. For data composition, we filter and upsample the ratio of long data to 25% in each sub-stage,
+while using the remaining 75% tokens to replay shorter data in its previous stage; our exploration confirms that this
+composition allows the model to effectively learn long-context understanding while maintaining short-context ability.
+To allow the model to activate long-context abilities on both pure-text and multimodal inputs, the long data used
+in Kimi-VL’s long-context activation consists of not only long text, but also long multimodal data, including long
+interleaved data, long videos, and long documents. Similar as cooldown data, we also synthesize a small portion of QA
+pairs to augment the learning efficiency of long-context activation. After the long-context activations, the model can
+pass needle-in-a-haystack (NIAH) evaluations with either long pure-text or long video haystack, proving its versatile
+long-context ability. We provide the NIAH recall accuracy on various range of context length up to 128K in Table 2.
+2.4 Post-Training Stages
+Joint Supervised Fine-tuning (SFT) In this phase, we fine-tune the base model of Kimi-VL with instruction-based
+fine-tuning to enhance its ability to follow instructions and engage in dialogue, culminating in the creation of the
+interactive Kimi-VL model. This is achieved by employing the ChatML format (Openai, 2024), which allows for a
+targeted instruction optimization while maintaining architectural consistency with Kimi-VL. We optimize the language
+model, MLP projector, and vision encoder using a mixture of pure-text and vision-language SFT data, which will be
+described in Sec 3.2. Supervision is applied only to answers and special tokens, with system and user prompts being
+masked. The model is exposed to a curated set of multimodal instruction-response pairs, where explicit dialogue role
+tagging, structured injection of visual embeddings, and preservation of cross-modal positional relationships are ensured
+through the format-aware packing. Additionally, to guarantee the model’s comprehensive proficiency in dialogue, we
+incorporate a mix of multimodal data and pure text dialogue data used in Moonlight, ensuring its versatility across
+various dialogue scenarios.
+We first train the model at the sequence length of 32k tokens for 1 epoch, followed by another epoch at the sequence
+length of 128k tokens. In the first stage (32K), the learning rate decays from2 × 10−5 to 2 × 10−6, before it re-warmups
+to 1 × 10−5 in the second stage (128K) and finally decays to 1 × 10−6. To improve training efficiency, we pack multiple
+training examples into each single training sequence.
+Long-CoT Supervised Fine-Tuning With the refined RL prompt set, we employ prompt engineering to construct
+a small yet high-quality long-CoT warmup dataset, containing accurately verified reasoning paths for both text and
+image inputs. This approach resembles rejection sampling (RS) but focuses on generating long-CoT reasoning paths
+through prompt engineering. The resulting warmup dataset is designed to encapsulate key cognitive processes that are
+fundamental to human-like reasoning, such asplanning, where the model systematically outlines steps before execution;
+evaluation, involving critical assessment of intermediate steps; reflection, enabling the model to reconsider and refine
+its approach; and exploration, encouraging consideration of alternative solutions. By performing a lightweight SFT on
+this warm-up dataset, we effectively prime the model to internalize these multimodal reasoning strategies. As a result,
+the fine-tuned long-CoT model demonstrates improved capability in generating more detailed and logically coherent
+responses, which enhances its performance across diverse reasoning tasks.
+Reinforcement Learning To further advance the model’s reasoning abilities, we then train the model with reinforce-
+ment learning (RL), enabling the model to autonomously generate structured CoT rationales. Specifically, similar
+as Kimi k1.5 (K. Team et al. 2025), we adopt a variant of online policy mirror descent as our RL algorithm, which
+iteratively refines the policy model πθ to improve its problem-solving accuracy. During the i-th training iteration, we
+treat the current model as a reference policy model and optimize the following objective, regularized by relative entropy
+6
+
+KIMI -VL T ECHNICAL REPORT
+to stabilize policy updates:
+max
+θ
+E(x,y∗)∼D
+
+E(y,z)∼πθ [r(x, y, y∗)] − τ KL(πθ(x)||πθi (x))
+
+, (1)
+where r is a reward model that justifies the correctness of the proposed answer y for the given problem x, by assigning
+a value r(x, y, y∗) ∈ {0, 1} based on the ground truth y∗, and τ > 0 is a parameter controlling the degree of
+regularization.
+Each training iteration begins by sampling a problem batch from the dataset D, and the model parameters are updated
+to θi+1 using the policy gradient derived from (1), with the optimized policy model subsequently assuming the role of
+reference policy for the subsequent iteration. To enhance RL training efficiency, we implement a length-based reward
+to penalize excessively long responses, mitigating the overthinking problem where the model generates redundant
+reasoning chains. Besides, we employ two sampling strategies including curriculum sampling and prioritized sampling,
+which leverage difficulty labels and per-instance success rates to focus training effort on the most pedagogically valuable
+examples, thereby optimizing the learning trajectory and improving training efficiency.
+Through large-scale reinforcement learning training, we can derive a model that harnesses the strengths of both basic
+prompt-based CoT reasoning and sophisticated planning-enhanced CoT approaches. During inference, the model
+maintains standard autoregressive sequence generation, eliminating the deployment complexities associated with
+specialized planning algorithms that require parallel computation. Simultaneously, the model develops essential meta-
+reasoning abilities including error detection, backtracking, and iterative solution refinement by effectively utilizing the
+complete history of explored reasoning paths as contextual information. With endogenous learning from its complete
+reasoning trace history, the model can effectively encode planned search procedures into its parametric knowledge.
+2.5 Infrastructure
+Storage We utilize S3 (Amazon Web Services 2023) compatible object storage from cloud service vendors to store our
+visual-text data. To minimize the time between data preparation and model training, we store visual data in its original
+format and have developed an efficient and flexible data loading system. This system provides several key benefits:
+• Supports on-the-fly data shuffling, mixing, tokenization, loss masking and packing during training, allowing us to
+adjust data proportions as needed;
+• Enables random augmentation of both visual and text data, while preserving the correctness of 2D coordinate and
+orientation information during transformations;
+• Ensures reproducibility by strictly controlling random states and other states across different data loader workers,
+guaranteeing that any interrupted training can be resumed seamlessly—the data sequence after resumption remains
+identical to an uninterrupted run;
+• Delivers high-performance data loading: through multiple caching strategies, our system reliably supports training
+on large scale clusters while maintaining controlled request rates and throughput to the object storage.
+Additionally, to ensure consistent dataset quality control, we developed a centralized platform for data registration,
+visualization, compiling statistics, synchronizing data across cloud storage systems, and managing dataset lifecycles.
+Parallelism We adopt a 4D parallelism strategy—Data Parallelism (S. Li et al. 2020), Expert Parallelism (Fedus et al.
+2022), Pipeline Parallelism (Y . Huang et al. 2019; Narayanan et al. 2021), and Context Parallelism (Jacobs et al. 2023;
+H. Liu et al. 2023)—to accelerate the speed of Kimi-VL . After optimizing parallel strategies, the resulting training
+throughput of our model is around 60% higher than a 7B dense VLM (e.g. VLMs based on Qwen2.5-7B).
+• Data Parallelism (DP). DP replicates the model across multiple devices, each processing different micro-batches.
+This setup allows larger effective batch sizes by simply increasing the number of devices.
+• Expert Parallelism (EP). EP distributes expert modules in the MoE layer across multiple devices. When combined
+with DP, experts on a given device can handle tokens from different DP groups, enhancing computational efficiency.
+• Pipeline Parallelism (PP). PP splits the model into multiple layer-based stages. To minimize pipeline bubbles, we
+allocate the Vision Tower (VT) and several decoder layers to the first stage, place the output layer and additional
+decoder layers in the last stage, and distribute the remaining decoder layers evenly across intermediate stages based
+on their time overhead.
+• Context Parallelism (CP). CP addresses long-sequence training by splitting sequences across different CP ranks
+in conjunction with flash attention (Dao et al. 2022). This substantially reduces peak memory usage and relieves
+the memory pressure from attention computations.
+7
+
+KIMI -VL T ECHNICAL REPORT
+The manuscripts in the images belong to Albert Einstein, a renowned physicist known for his contributions to the theory of general relativity. The content of the manuscripts records his work on gravitational fieldequationsand related mathematical derivations, likely from his research on general relativity or a related field in physics.Key Observations:1. Handwriting Style: The handwriting is consistent with Einstein's known style, characterized by careful, albeit slightly messy, mathematical notation.2. Content Analysis:-The equations involve terms like partial derivatives, summations, and Greek letters (e.g., γ, g), which are typical in tensor calculus and field theory.-The first image shows equations that resemble Einstein's formulation of gravitational field equations, possibly related to the Einstein field equations in general relativity.-The second image includes numerical calculations, constants (e.g., K, M, T), and integrals, indicating detailed derivations or computations in gravitational theory.3. German Terms: The presence of German terms like "Einheitsvektor" (unit vector) and "Gln" (equation) suggests Einstein, who was German-speaking.Conclusion:These manuscripts are part of Einstein's research materials, documenting his mathematical and theoretical work on gravitational fields and field equations. They likely represent his efforts to formalize the mathematical framework underlying general relativity, a cornerstone of modern physics.Final Answer:The manuscripts belong to Albert Einstein and record his work on gravitational field equations and mathematical derivations in general relativity.
+InstructionPlease infer step by step who this manuscript belongs to and what it records
+Response
+<Think>Alright,Ineedtofigureoutwhothismanuscriptbelongstoandwhatitrecordsbasedontheimagesprovided.Let'sstartbyanalyzingtheimagescarefully.First,I'lllookatthevisualcharacteristicsofthemanuscript.Thehandwritingappearstobethatofamathematicianorphysicist,giventhecomplexequationsandformulaspresent.Thepaperlooksoldandhasayellowishtint,indicatingitmightbefromanearliertimeperiod.Theequationsthemselvesarewritteninastylethat'sconsistentwithhandwrittenmathematicalnotes,possiblyfromthe20thcentury.Next,I'llexaminethecontentofthemanuscripts.Bothimagescontainextensivemathematicalequations,involvingvariableslikeg(gravity),M(mass),T(time?),andvariousindicesandsummations.Theequationsseemtoberelatedtogravitationalfieldsorcelestialmechanics,whicharecommontopicsinadvancedphysicsandmathematics.Lookingatthefirstimage(Image1),Icanseeequationsinvolvingpartialderivativesandsummations,whicharetypicalinfieldtheoryortensorcalculus.Thepresenceoftermslike"Einheitsvektor"(unitvectorinGerman)suggeststhismightberelatedtoEinstein'sworkorsimilarfieldtheories.Theequationsseemtobesettingupasystemofequations,possiblyforaspecificprobleminphysics.Thesecondimage(Image2)containsmorenumericalcalculationsandformulas.Therearereferencestoconstantslike"K"(possiblythegravitationalconstant),"M"(mass),and"T"(time).Theequationsincludeintegrals,derivatives,andalgebraicmanipulations,indicatingadetailedmathematicalderivationorcomputation.Now,consideringthewritingstyleandthecontent,Inoticethatthehandwritingissomewhatmessybutconsistent,suggestingit'sfromasingleauthor.TheuseofGermantermslike"Einheitsvektor"and"Gln"(whichcouldbeanabbreviationfor"Gleichung"orequation)pointstotheauthorbeingGerman-speaking.Thefirstimageseemstobeapagefromamathematicalmanuscript,possiblyfromEinstein'swork,giventhestyleandcontent.Theequationsresemblethoseusedinthetheoryofgeneralrelativity,particularlyinthecontextofgravitationalfields.Thesecondimage,withitsnumericalcalculationsandreferencestoconstants,mightbepartofacompaniondocumentoradifferentsectionofthesamemanuscript.Puttingthistogether,themanuscriptslikelybelongtoAlbertEinstein,giventhestyleoftheequationsandthecontentrelatedtogravitationalfieldsandfieldtheory.Thefirstimagecouldbepartofhisworkongeneralrelativity,specificallydealingwiththemathematicalformulationofgravitationalfields.Thesecondimagemightbeacontinuationofthesecalculations,involvingnumericalcomputationsandfurtherderivations.Toverify,I'llconsiderthefollowingpoints:1.ThepresenceofGermantermssuggestsaGerman-speakingauthor,whichalignswithEinstein'sbackground.2.ThecomplexmathematicalcontentmatchesEinstein'sknownworkinfieldtheoryandgeneralrelativity.3.ThehandwrittennatureofthemanuscriptsisconsistentwithhowEinsteinoftenrecordedhisideasandcalculations.Giventheseobservations,IconcludethatthemanuscriptsbelongtoAlbertEinsteinandrecordhisworkongravitationalfieldequationsandrelatedmathematicalderivations,possiblyfromhisresearchongeneralrelativityorarelatedfieldinphysics.</Think>
+Figure 6: Manuscript reasoning visualization. Kimi-VL-Thinking demonstrates the ability to perform historical and
+scientific inference by analyzing handwritten manuscripts step by step. In this example, our model identifies the author
+as Albert Einstein based on handwriting style, content analysis, and language cues. It reasons that the manuscripts
+relate to gravitational field equations, consistent with Einstein’s contributions to general relativity.
+Beyond these four parallel strategies, we incorporate ZeRO1 (Rajbhandari et al. 2020) and Selective Checkpointing
+Activation (T. Chen et al. 2016; Korthikanti et al. 2022) to further optimize memory usage. ZeRO1 reduces optimizer
+state overhead by using a distributed optimizer while avoiding extra communication costs. Selective Checkpointing
+Activation trades time for space by recomputing only those layers that have low time overhead but high memory
+consumption, striking a balance between computation efficiency and memory demands. For extremely long sequences,
+we expand recomputation to a broader set of layers to prevent out-of-memory errors.
+3 Data Construction
+3.1 Pre-Training Data
+Our multimodal pre-training corpus is designed to provide high-quality data that enables models to process and
+understand information from multiple modalities, including text, images, and videos. To this end, we have also curated
+high-quality data from six categories – caption, interleaving, OCR, knowledge, video, and agent – to form the corpus.
+When constructing our training corpus, we developed several multimodal data processing pipelines to ensure data
+quality, encompassing filtering, synthesis, and deduplication. Establishing an effective multimodal data strategy is
+crucial during the joint training of vision and language, as it both preserves the capabilities of the language model and
+facilitates alignment of knowledge across diverse modalities.
+We provide a detailed description of these sources in this section, which is organized into the following categories:
+Caption Data Our caption data provides the model with fundamental modality alignment and a broad range of world
+knowledge. By incorporating caption data, the multimodal LLM gains wider world knowledge with high learning
+efficiency. We have integrated various open-source Chinese and English caption datasets like (Schuhmann et al. 2022;
+Gadre et al. 2024) and also collected substantial in-house caption data from multiple sources. However, throughout the
+training process, we strictly limit the proportion of synthetic caption data to mitigate the risk of hallucination stemming
+from insufficient real-world knowledge.
+8
+
+KIMI -VL T ECHNICAL REPORT
+For general caption data, we follow a rigorous quality control pipeline that avoids duplication and maintain high
+image-text correlation. We also vary image resolution during pre-training to ensure that the vision tower remains
+effective when processing images of both high- and low-resolution.
+Image-text Interleaving Data During the pre-training phase, the model benefits from interleaving data for many
+aspects. For example, multi-image comprehension ability can be boosted by interleaving data; interleaving data always
+provides detailed knowledge for the given image; a longer multimodal context learning ability can also be gained by
+interleaving data. What’s more, we also find that interleaving data can contribute positively to maintaining the model’s
+language abilities. Thus, image-text interleaving data is an important part in our training corpus. Our multimodal
+corpus considered open-sourced interleave datasets like (Zhu et al. 2024; Laurençon et al. 2024) and also constructed
+large-scale in-house data using resources like textbooks, webpages, and tutorials. Further, we also find that synthesizing
+the interleaving data benefits the performance of multimodal LLM for keeping the text knowledge. To ensure each
+image’s knowledge is sufficiently studied, for all the interleaving data, despite standard filtering, deduping, and other
+quality control pipeline, we also integrate a data reordering procedure to keep all the image and text in the correct order.
+OCR Data Optical Character Recognition (OCR) is a widely adopted technique that converts text from images into an
+editable format. In our model, a robust OCR capability is deemed essential for better aligning the model with human
+values. Accordingly, our OCR data sources are diverse, ranging from open-source to in-house datasets, encompassing
+both clean and augmented images, and spanning over single-page and multi-page inputs.
+In addition to the publicly available data, we have developed a substantial volume of in-house OCR datasets, covering
+multilingual text, dense text layouts, web-based content, and handwritten samples. Furthermore, following the principles
+outlined in OCR 2.0 (Wei et al. 2024), our model is also equipped to handle a variety of optical image types, including
+figures, tables, geometry diagrams, mermaid plots, and natural scene text. We apply extensive data augmentation
+techniques—such as rotation, distortion, color adjustments, and noise addition—to enhance the model’s robustness. As
+a result, our model achieves a high level of proficiency in OCR tasks.
+In addition to single-page OCR data, we collect and convert a large volume of in-house multi-page OCR data to activate
+the model’s understanding of long documents in the real world. With the help of these data, our model is capable of
+performing accurate OCR on a single image but can also comprehend an entire academic paper or a scanned book.
+Knowledge Data The concept of multimodal knowledge data is analogous to the previously mentioned text pre-training
+data, except here we focus on assembling a comprehensive repository of human knowledge from diverse sources
+to further enhance the model’s capabilities. For example, carefully curated geometry data in our dataset is vital for
+developing visual reasoning skills, ensuring the model can interpret the abstract diagrams created by humans.
+Our knowledge corpus adheres to a standardized taxonomy to balance content across various categories, ensuring
+diversity in data sources. Similar to text-only corpora, which gather knowledge from textbooks, research papers, and
+other academic materials, multimodal knowledge data employs both a layout parser and an OCR model to process
+content from these sources. While we also include filtered data from internet-based and other external resources.
+Because a significant portion of our knowledge corpus is sourced from internet-based materials, infographics can cause
+the model to focus solely on OCR-based information. In such cases, relying exclusively on a basic OCR pipeline may
+limit training effectiveness. To address this, we have developed an additional pipeline that better captures the purely
+textual information embedded within images.
+Agent Data For agent tasks, the model’s grounding and planning capabilities have been significantly enhanced.
+In addition to utilizing publicly available data, a platform has been established to efficiently manage and execute
+virtual machine environments in bulk. Within these virtual environments, heuristic methods were employed to
+collect screenshots and corresponding action data. This data was then processed into dense grounding formats and
+continuous trajectory formats. The design of the Action Space was categorized according to Desktop, Mobile, and Web
+environments. Furthermore, icon data was collected to strengthen the model’s understanding of the meanings of icons
+within software graphical user interfaces (GUIs). To enhance the model’s planning ability for solving multi-step desktop
+tasks, a set of computer-use trajectories was collected from human annotators, each accompanied by synthesized
+Chain-of-Thought (Aguvis (Yiheng Xu et al. 2024)). These multi-step agent demonstrations equip Kimi-VL with the
+capability to complete real-world desktop tasks (on both Ubuntu and Windows).
+Video Data In addition to image-only and image-text interleaved data, we also incorporate large-scale video data
+during pre-training, cooldown, and long-context activation stages to enable two directions of essential abilities of our
+model: first, to understand a long-context sequence dominated by images (e.g. hour-long videos) in addition to long
+text; second, to perceive fine-grained spatio-temporal correspondence in short video clips.
+Our video data are sourced from diverse resources, including open-source datasets as well as in-house web-scale video
+data, and span videos of varying durations. Similarly, to ensure sufficient generalization ability, our video data cover a
+9
+
+KIMI -VL T ECHNICAL REPORT
+wide range of scenes and diverse tasks. We cover tasks such as video description and video grounding, among others.
+For long videos, we carefully design a pipeline to produce dense captions. Similar to processing the caption data, we
+strictly limit the proportion of the synthetic dense video description data to reduce the risk of hallucinations.
+Text Data Our text pretrain corpus directly utilizes the data in Moonlight J. Liu et al. 2025a, which is designed to
+provide comprehensive and high-quality data for training large language models (LLMs). It encompasses five domains:
+English, Chinese, Code, Mathematics & Reasoning, and Knowledge. We employ sophisticated filtering and quality
+control mechanisms for each domain to ensure the highest quality training data. For all pretrain data, we conducted
+rigorous individual validation for each data source to assess its specific contribution to the overall training recipe.
+This systematic evaluation ensures the quality and effectiveness of our diverse data composition. To optimize the
+overall composition of our training corpus, the sampling strategy for different document types is empirically determined
+through extensive experimentation. We conduct isolated evaluations to identify document subsets that contribute most
+significantly to the model’s knowledge acquisition capabilities. These high-value subsets are upsampled in the final
+training corpus. However, to maintain data diversity and ensure model generalization, we carefully preserve a balanced
+representation of other document types at appropriate ratios. This data-driven approach helps us optimize the trade-off
+between focused knowledge acquisition and broad generalization capabilities.
+3.2 Instruction Data
+At this stage, the data is primarily aimed at enhancing the model’s conversational abilities and instruction-following
+capabilities. To cover as many scenarios as possible, we enrich the data across different domains. For non-reasoning
+tasks, including chart interpretation, agent grounding, OCR, image-grounded conversations, question-answering,
+writing, and text processing, we initially construct a seed dataset through human annotation. This seed dataset is used to
+train a seed model. Subsequently, we collect a diverse set of prompts and employ the seed model to generate multiple
+responses to each prompt. Annotators then rank these responses and refine the top-ranked response to produce the final
+version. For reasoning tasks like visual coding, visual reasoning, and math/science problems, where rule-based and
+model-based verifications are more accurate and efficient than human judgment, we utilize rejection sampling to expand
+the SFT dataset. The complete vanilla SFT dataset comprises approximately a 1:1 ratio of text tokens to image tokens.
+3.3 Reasoning Data
+Our reasoning data is meticulously constructed for activation and enhancement of the model’s multimodal reasoning
+capabilities during both the long-CoT supervised fine-tuning and reinforcement learning stages. Through developing a
+generation pipeline that resembles rejection sampling (RS) and prompt engineering, we collect and synthesize an amount
+of high-quality long-CoT data. Specifically, we first assemble a collection of QA data with ground truth annotations
+that require multi-step reasoning, such as mathematical problem-solving and domain-specific VQA. Subsequently,
+we sample multiple detailed reasoning trajectories for each question by leveraging a powerful long-CoT model -
+Kimi k1.5 (K. Team et al. 2025) with curated reasoning prompts. In rejection sampling, we feed the true labels and
+model predictions into an off-the-shelf reward model for judgment. Wrong chain-of-thought responses are filtered out
+according to the model evaluation as well as some rule-based rewards, thus improving the reasoning data quality.
+4 Evaluation
+We begin by presenting our comprehensive model and conducting a comparative analysis with leading state-of-the-art
+(SoTA) solutions. Following this introduction, we proceed to assess various sub-capabilities of the model through
+detailed performance evaluations. This part examines how effectively the model handles different tasks and scenarios,
+providing insights into its strengths and limitations across diverse functional domains.
+4.1 Comparison to the State-of-the-Art Models
+Table 3 presents a comprehensive evaluation of Kimi-VL against state-of-the-art vision-language models across multiple
+benchmarks. Although having a more parameter-efficient architecture (2.8B+0.4B activated parameters) compared
+to larger models such as GPT-4o, Llama-3.2-11B-Inst. and Gemma3-12B-IT, Kimi-VL demonstrates competitive or
+superior performance in several key areas. Our model employs a Mixture-of-Experts (MoE) architecture similar to
+DeepSeek-VL2, but outperforms it on most benchmarks with significantly fewer parameters (activated: 2.8B vs 4.5B;
+total: 16B vs 28B); it also outperforms Qwen2.5-VL-7B (actually 8.3B) on 19 out of 24 benchmarks, though the latter
+*GPT-4o and GPT-4o-mini results use Omniparser without UIA, according to Bonatti et al. 2024.
+10
+
+KIMI -VL T ECHNICAL REPORT
+Benchmark (Metric) GPT-4o GPT- Qwen2.5- Llama3.2- Gemma3- DeepSeek- Kimi-VL-
+4o-mini VL-7B 11B-Inst. 12B-IT VL2 A3B
+Architecture - - Dense Dense Dense MoE MoE
+# Act. Params (LLM+VT) - - 7.6B+0.7B 8B+2.6B 12B+0.4B 4.1B+0.4B 2.8B+0.4B
+# Total Params - - 8B 11B 12B 28B 16B
+College-level
+MMMUval (Pass@1) 69.1 60.0 58.6 48 59.6 51.1 57.0
+VideoMMMU (Pass@1) 61.2 - 47.4 41.8 57.2 44.4 52.6
+MMVUval (Pass@1) 67.4 61.6 50.1 44.4 57.0 52.1 52.2
+General
+MMBench-EN-v1.1 (Acc) 83.1 77.1 82.6 65.8 74.6 79.6 83.1
+MMStar (Acc) 64.7 54.8 63.9 49.8 56.1 55.5 61.3
+MMVet (Pass@1) 69.1 66.9 67.1 57.6 64.9 60.0 66.7
+RealWorldQA (Acc) 75.4 67.1 68.5 63.3 59.1 68.4 68.1
+AI2D (Acc) 84.6 77.8 83.9 77.3 78.1 81.4 84.9
+Multi-image BLINK (Acc) 68.0 53.6 56.4 39.8 50.3 - 57.3
+Math MathVista (Pass@1) 63.8 52.5 68.2 47.7 56.1 62.8 68.7
+MathVision (Pass@1) 30.4 - 25.1 13.6 32.1 17.3 21.4
+OCR InfoVQA (Acc) 80.7 57.9 82.6 34.6 43.8 78.1 83.2
+OCRBench (Acc) 815 785 864 753 702 811 867
+OS Agent
+ScreenSpot-V2 (Acc) 18.1 - 86.8 - - - 92.8
+ScreenSpot-Pro (Acc) 0.8 - 29.0 - - - 34.5
+OSWorld (Pass@1) 5.03 - 2.5 - - - 8.22
+WindowsAgentArena (Pass@1)* 9.4 2.7 3.4 - - - 10.4
+Long Document MMLongBench-Doc (Acc) 42.8 29.0 29.6 13.8 21.3 - 35.1
+Long Video
+Video-MME (w/o sub. / w/ sub.) 71.9/77.2 64.8/68.9 65.1/71.6 46.0/49.5 58.2/62.1 - 67.8/72.6
+MLVUMCQ (Acc) 64.6 48.1 70.2 44.4 52.3 - 74.2
+LongVideoBenchval 66.7 58.2 56.0 45.5 51.5 - 64.5
+Video Perception
+EgoSchemafull 72.2 - 65.0 54.3 56.9 38.5 78.5
+VSI-Bench 34.0 - 34.2 20.6 32.4 21.7 37.4
+TOMATO 37.7 28.8 27.6 21.5 28.6 27.2 31.7
+Table 3: Performance of Kimi-VL against proprietary and open-source efficient VLMs; performance of GPT-4o is also
+listed in gray for reference. Top and second-best models are in boldface and underline respectively. Some results of
+competing models are unavailable due to limitation of model ability on specific tasks or model context length.
+has 2.59× more activated parameters. The following sections analyze performance across specific domains, which
+reveals Kimi-VL ’s strengths in OCR, math, agent, long-form content understanding, multi-image and video perception.
+4.1.1 College-level Academic Problems
+Our Kimi-VL model demonstrates competitive performance on college-level academic benchmarks. On MMMU
+validation set, it achieves a score of 57.0%, which outperforms DeepSeek-VL2 (51.1%) and is comparable to Qwen2.5-
+VL-7B (58.6%) and even Gemma-3-12B-IT (59.6%), despite having significantly fewer activated parameters. On
+video college-level problems, it significantly outperforms Qwen2.5-VL-7B and DeepSeek-VL2, only behind >10B
+Gemma-3-12B-IT, demonstrating reasonable university-level understanding capabilities compared to larger models.
+These results indicate that Kimi-VL effectively balances parameter efficiency with academic reasoning abilities.
+11
+
+KIMI -VL T ECHNICAL REPORT
+Thefirstpicture(image1)depictsadenseurbanareawithamixofbuildings,greenspaces,andadistinctivecircularstructure(possiblyadomeorobservatory).Todeterminewhichsub-picturematchesthislocation:Image4showsasimilarlydenseurbanenvironmentwithalargebuildingcomplexfeaturingacentralcourtyardandacircularstructureresemblingtheoneinimage1.Bothimagessharethesametypeofurbanlayout,buildingdensity,andgreenspaces.Image3includesachurchspire(notpresentinimage1)andamorespread-outlayout,makingitdistinct.Image2isclearlysuburbanwithlargerplotsandfewerbuildings,unlikethecompacturbansettingofimage1.Conclusion:Image4isthemostlikelycandidateasitmatchestheurbandensity,buildingtypes,andthecircularstructureseeninimage1.Answer:Thefourthsub-picture(image4)isinthesameplaceasthefirstpicture.
+Which of the four subgraphs in the figure is taken at the same place as subgraph 1?
+ThedomebuildingintheimageistheRogersCentre,amulti-purposestadiuminToronto,Canada.Itisrecognizablebyitsdistinctiveretractableroofandisalandmarkinthecity'sskyline,oftenvisiblealongsidetheCNTower(thetallspireinthebackground).TheRogersCentrehostsvariousevents,includingsportsgames,concerts,andconventions.
+What is the dome building in the picture?Instruction Response
+YouareinCyberpunk2077,aopen-worldactionrole-playinggamesetinNightCity(year2077).Theimageshowsafuturisticbarorclubwithinthegame’scyberpunk-themedenvironment,likelyamissionorsocialinteractionlocation(e.g.,"SitnexttoJackie"isvisibleintheHUD).Thesettingfeaturesneonlights,holographicdisplays,andcharacterswithcyberneticenhancements,typicalofthegame’saesthetic.
+Where am I ？Instruction
+Instruction
+Response
+Response
+Figure 7: Kimi-VL exhibits strong visual reasoning capabilities by grounding visual content in spatial, contextual, and
+cultural knowledge. It accurately identifies matching urban locations based on structural and layout features, interprets
+scenes from video games like Cyberpunk 2077 using stylistic cues, and recognizes real-world landmarks such as the
+Rogers Centre in Toronto.
+4.1.2 General Visual Ability
+Kimi-VL exhibits strong general visual understanding capabilities across multiple benchmarks. On MMBench-EN-v1.1,
+it achieves 83.1% accuracy, outperforming all efficient VLMs in comparison, and performing on par with GPT-4o.
+For AI2D, our model achieves 84.9% and surpasses all compared models including GPT-4o (84.6%). On MMVet,
+Kimi-VL scores 66.7% and ties closely with Qwen2.5-VL-7B (67.1%) and GPT-4o-mini (66.9%). For RealWorldQA,
+it achieves 68.1%, outperforming Gemma3-12B (59.1%) and approaching Qwen2.5-VL-7B (68.5%). These results
+demonstrate that our model maintains robust general visual understanding despite its compact architecture.
+In multi-image reasoning tasks, Kimi-VL shows promising capabilities with a score of 57.3% on the BLINK benchmark.
+This performance surpasses Qwen2.5-VL-7B (56.4%), GPT-4o-mini (53.6%), Gemma3-12B-IT (50.3%), and Llama3.2-
+11B-Inst. (39.8%). The ability to reason across multiple images requires understanding spatial and temporal relationships
+between visual elements, which our model handles effectively with fewer parameters than most competitors.
+4.1.3 Mathematical Reasoning
+With its relatively small scale, Kimi-VL also demonstrates strong mathematical reasoning capabilities, particularly on
+the MathVista benchmark where it achieves 68.7%, outperforming all compared models including GPT-4o (63.8%) and
+Qwen2.5-VL-7B (68.2%). It indicates our model’s exceptional ability to understand and solve mathematical problems
+†Video source: https://vimeo.com/channels/top/54348266
+12
+
+KIMI -VL T ECHNICAL REPORT
+ 
+Instruction
+•
+•
+•
+•
+•
+•
+•
+•
+x + x + 124° = 180°
+2x + 124° = 180°
+2x = 56°
+x = 28°
+Response
+Figure 8: Kimi-VL demonstrates its capability to perform symbolic reasoning and geometric inference by solving a
+circle geometry problem step by step. The model analyzes given conditions, applies geometric theorems such as the
+inscribed angle theorem and properties of triangle angles, and accurately derives the target angle.
+presented in visual contexts. On the more challenging MathVision benchmark, due to limited activated parameters,
+Kimi-VL outperforms DeepSeek-VL2 and Llama-3.2-11B-Inst., but lags behind Qwen2.5-VL-7B and Gemma-12B-IT.
+Nevertheless, through RL and test-time scaling, Kimi-VL-Thinking has significantly improved and already on par with
+30B-level VLMs (see Table 4). These results highlight our model’s effectiveness in combining visual perception with
+mathematical problem-solving, an essential capability for real-world applications.
+4.1.4 Document Understanding and OCR
+Kimi-VL excels in document understanding and OCR tasks across all benchmarks in this category. On InfoVQA, it
+achieves 83.2% accuracy, outperforming GPT-4o (80.7%) and DeepSeek-VL2 (78.1%). For OCRBench, our model
+scores 86.7%, surpassing all other models including GPT-4o-mini (78.5%) and DeepSeek-VL2 (81.1%). These results
+demonstrate that our model has exceptional text recognition and document understanding capabilities, making it
+especially suitable for applications involving document processing and information extraction.
+4.1.5 Agent Grounding and Multi-turn Agent Interaction
+In agent-based tasks, Kimi-VL demonstrates remarkable performance. On single-step grounding, our model shows
+strong accuracy, with 92.0% on ScreenSpot-V2 and 34.5% on extremely difficult ScreenSpot-Pro (on 4K screens),
+proving its strong agent grounding abilities. More importantly, it also shows strong multi-step turn agent interaction
+abilities: For OSWorld, Kimi-VL reaches 8.22%, outperforming GPT-4o (5.03%) and other capable open-source
+models; On WindowsAgentArena, our model achieves 10.4%, also surpassing GPT-4o (9.4%) and others. These results
+highlight Kimi-VL’s exceptional ability to understand and interact with operating system interfaces, suggesting strong
+potential for applications in automated UI navigation and task execution.
+13
+
+KIMI -VL T ECHNICAL REPORT
+Parse the complete table and output it in markdown table format
+# Sparkling Smiles Clinic Ratio Analysis
+## Growth
+| Year | Sales Growth |
+|------|-------------|
+| 2024 | 30%         |
+| 2025 | 2%          |
+| 2026 | 2%          |
+| 2027 | 2%          |
+| 2028 | 2%          |
+| 2029 | 2%          |
+| 2030 | 2%          |
+| 2031 | 2%          |
+## Percent of Total Assets
+| Year | Inventory | Other Current Assets | Total Current Assets | Long-term Assets | Total Assets | Current Liabilities 
+| Long-term Liabilities | Total Liabilities | Net Worth |
+|------|-----------|----------------------|----------------------|------------------|--------------|----------------------|------------------------|--------------------|-----------|
+| 2024 | 23%       | -1%                  | 21%                  | 79%              | 100%         | 5%                   | 44%                    | 49%                | 51%       |
+| 2025 | 17%       | 35%                  | 52%                  | 48%              | 100%         | 4%                   | 28%                    | 32%                | 68%       |
+| 2026 | 14%       | 54%                  | 68%                  | 32%              | 100%         | 3%                   | 21%                    | 24%                | 76%       |
+| 2027 | 12%       | 66%                  | 79%                  | 21%              | 100%         | 3%                   | 15%                    | 18%                | 82%       |
+| 2028 | 11%       | 75%                  | 86%                  | 14%              | 100%         | 2%                   | 11%                    | 13%                | 87%       |
+| 2029 | 9%        | 78%                  | 87%                  | 13%              | 100%         | 2%                   | 7%                     | 9%                 | 91%       |
+| 2030 | 8%        | 84%                  | 92%                  | 8%               | 100%         | 2%                   | 5%                     | 6%                 | 94%       |
+| 2031 | 7%        | 88%                  | 96%                  | 4%               | 100%         | 1%                   | 3%                     | 4%                 | 96%       |
+## Percent of Sales
+| Year | Gross Margin | Selling, General & Administrative Expenses | Advertising Expenses | Profit Before Interest and Taxes |
+|------|--------------|--------------------------------------------|----------------------|-----------------------------------|
+| 2024 | 72%          | 100%                                       | 3%                   | 0%                                |
+| 2025 | 72%          | 85%                                        | 2%                   | 15%                               |
+| 2026 | 72%          | 85%                                        | 2%                   | 15%                               |
+| 2027 | 72%          | 84%                                        | 2%                   | 16%                               |
+| 2028 | 72%          | 84%                                        | 2%                   | 16%                               |
+| 2029 | 72%          | 84%                                        | 2%                   | 17%                               |
+| 2030 | 72%          | 83%                                        | 2%                   | 17%                               |
+| 2031 | 72%          | 83%                                        | 2%                   | 17%                               |
+## Main Ratios
+| Year | Current Ratio | Quick Ratio | Total Debt to Total Assets | Pre-tax Return on Net Worth | Pre-tax Return on Assets |
+|------|---------------|-------------|----------------------------|-----------------------------|-------------------------|
+| 2024 | 4.42          | -0.23       | 0.49                       | -4%                        | -2%                     |
+| 2025 | 14.73         | 9.98        | 0.32                       | 56%                        | 38%                     |
+| 2026 | 22.80         | 17.96       | 0.24                       | 43%                        | 33%                     |
+| 2027 | 31.05         | 26.11       | 0.18                       | 36%                        | 30%                     |
+| 2028 | 39.56         | 34.53       | 0.13                       | 31%                        | 27%                     |
+| 2029 | 47.86         | 42.72       | 0.09                       | 26%                        | 23%                     |
+| 2030 | 59.37         | 54.13       | 0.06                       | 22%                        | 20%                     |
+| 2031 | 71.17         | 65.82       | 0.04                       | 19%                        | 18%                     |
+## Additional Ratios
+| Year | Net Profit Margin | Return on Equity |
+|------|-------------------|------------------|
+| 2024 | -1%               | -4%              |
+| 2025 | 8%                | 45%              |
+| 2026 | 9%                | 35%              |
+| 2027 | 9%                | 29%              |
+| 2028 | 9%                | 25%              |
+| 2029 | 9%                | 20%              |
+| 2030 | 9%                | 17%              |
+| 2031 | 9%                | 15%              |
+## Activity Ratios
+| Year | Inventory Turnover |
+|------|--------------------|
+| 2024 | 78.41              |
+| 2025 | 61.54              |
+| 2026 | 61.54              |
+| 2027 | 61.54              |
+| 2028 | 61.54              |
+| 2029 | 61.54              |
+| 2030 | 61.54              |
+| 2031 | 61.54              |
+Response
+ Please generate the latex code of the formula in the image.
+Instruction
+Certainly! Here is the LaTeX code for the formula in the image:
+```latex
+\begin{align*}
+\boldsymbol{x}_{t-1} &\sim q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t, 
+\boldsymbol{x}_0) = \mathcal{N}(\boldsymbol{\mu}_q, 
+\boldsymbol{\Sigma}_q) \\
+&= \mathcal{N}\left(\frac{\sqrt{\alpha_t}(1-\bar{\alpha}_{t-
+1})\boldsymbol{x}_t + \sqrt{\bar{\alpha}_{t-1}}(1-
+\alpha_t)\boldsymbol{x}_0}{1-\bar{\alpha}_t}, \frac{(1-\alpha_t)(1-
+\bar{\alpha}_{t-1})}{1-\bar{\alpha}_t}\boldsymbol{I}\right) \\
+&= \mathcal{N}\left(\frac{\sqrt{\bar{\alpha}_{t-1}}\beta_t}{1-
+\bar{\alpha}_t}\boldsymbol{x}_0 + \frac{\sqrt{\alpha_t}(1-
+\bar{\alpha}_{t-1})}{1-\bar{\alpha}_t}\boldsymbol{x}_t, \frac{1-
+\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t}\beta_t\boldsymbol{I}\right)
+\end{align*}
+```
+  
+Response
+ 识别这篇作文的内容
+Instruction
+这篇作文的内容如下：
+---
+得勤快，我会练字，我就是我自己的手机毒霸，管好我自己，少做傻事情哈。其实聪明
+人也可以很听话的，至少在没有长大以前。
+问你能不能不跟到你爸爸切北京啊，“我不切，一个人在成都你养我”“我养你啊”，
+哎，想到就心酸，等着吧。 
+好了，我不写了。你，要好好的，要切煮饿了，成都天气也凉了，北京也一样吧。多穿
+衣服多喝热水好了，我们就到这。
+以后再遇到起：
+好久不见。
+你好吗？
+我很好！ 
+@六年级二班 - 王天乐
+---
+Response
+Instruction
+����������������
+Figure 9: Diverse OCR visualization. Kimi-VL demonstrates strong OCR capabilities across varied content types,
+including structured financial tables, complex mathematical formulas, and handwritten Chinese text. The model
+accurately parses tabular data into markdown, converts formulas to LaTeX, and transcribes handwritten paragraphs with
+contextual understanding, showcasing its versatility in multimodal text extraction and interpretation.
+4.1.6 Long Document and Long Video Understanding
+Kimi-VL demonstrates competitive performance in long-form content understanding. On MMLongBench-Doc, a
+challenging benchmark with question-answering on up to 100+ pages, it achieves 35.1%, outperforming GPT-4o-mini
+(29.0%) and Qwen2.5-VL-7B (29.6%), only behind GPT-4o (42.8%). For long video understanding, on Video-MME,
+our model outperforms all efficient VLMs and especially leads on the fairer w/o subtitle setting, where models have
+to find answers from video frames instead of hacking from input subtitles; on w/ subtitlesetting, it also reaches
+extraordinary 72.6% accuracy. On the MCQ subset of MLVU, Kimi-VL achieves an impressive 74.2% score, achieving
+state-of-the-art and surpassing both GPT-4o (64.6%) and Qwen2.5-VL-7B (70.2%). For LongVideoBench, it scores
+64.5%, outperforming all compared models except GPT-4o (66.7%). These results demonstrate Kimi-VL ’s strong
+capability to understand long-form PDFs and videos.
+4.1.7 Egocentric and Fine-grained Video Perception
+Kimi-VL also shows strong performance in more nuanced video perception tasks. On EgoSchema full set (hidden test
+set), it achieves 78.5%, significantly outperforming GPT-4o (72.2%), Qwen2.5-VL-7B (65.0%). For VSI-Bench, a
+very challenging benchmark that requires to understand spatial relationships and correspondences of multiple objects
+in a video, our model scores 37.4%, surpassing GPT-4o (34.0%) and Qwen2.5-VL-7B (34.2%). In TOMATO that
+examines fine-grained temporal perception of VLMs, Kimi-VL reaches 31.7%, outperforming Qwen2.5-VL-7B (27.6%)
+and GPT-4o-Mini (28.8%). These results demonstrate our model’s strong capability to understand dynamic visual
+content, track objects over time, and interpret complex actions in video sequences, making it well-suited for applications
+requiring temporal visual understanding.
+‡Video source: https://www.youtube.com/watch?v=kYWUEV_e2ss
+14
+
+KIMI -VL T ECHNICAL REPORT
+Step 1
+Step 2
+Step 3
+Step 4
+Step 5
+Step 6
+Can you enable the 'Do Not Track' feature in Chrome to enhance my online privacy?
+Instruction: 
+Thought:...Toenablethe'DoNotTrack'featureinChrome,IneedtoaccessChrome'ssettings.Lookingattheinterface,Icanseetheverticalellipsismenubuttoninthetop-rightcornerofthebrowserwindow.ThismenubuttonisthestandardwaytoaccessChrome'ssettingsandotherfeatures....Action:Clickontheverticalellipsismenubuttoninthetop-rightcorneroftheChromewindowtoopenthebrowsermenu.Toolcall:click(x=0.884,y=0.144) Thought:... I can see that "Security" is one of the options in the Privacy and security section. This makes sense as "Do Not Track" is a security feature that helps protect user privacy by preventing websites from tracking browsing activity.  ...Action:Click on the "Security" option in the Privacy and security section to access more detailed security settings.Toolcall:click(x=0.522, y=0.884)
+Thought:...ThenextlogicalstepwouldbetoaccessChrome'ssettings,whereprivacyoptionslike"DoNotTrack"aretypicallylocated.Lookingatthemenuthat'scurrentlyopen,Icanseethe"Settings"optionatthebottomofthemenu.Thiswouldbethemostdirectpathtoaccessprivacysettings....Action:Clickonthe"Settings"optionintheChromemenutoaccessthebrowser'ssettingspage.Toolcall:click(x=0.744,y=0.851)
+Thought:...Now,Ineedtofindwherethe"DoNotTrack"settingislocated.BasedonmyknowledgeofChrome'ssettings,thisfeatureistypicallyfoundinthePrivacyandsecuritysection.Icanseethat"Privacyandsecurity"isoneoftheoptionsintheleftsidebarmenu....Action:Clickonthe"Privacyandsecurity"optionintheleftsidebarmenu.Toolcall:click(x=0.386,y=0.311)
+Thought:...Nowweneedtofindthe"DoNotTrack"setting.Lookingatthecurrentscreen,Icanseethat"DoNotTrack"isnotimmediatelyvisibleinthelistofoptions.However,Inoticethatthere'sa"Security"optionwithalockiconthatmightcontainprivacy-relatedsettingsincluding"DoNotTrack"....Action:Clickonthe"Security"optioninthePrivacyandsecuritysectiontoaccessmoredetailedsecuritysettings.Toolcall:click(x=0.522,y=0.884)
+Thought:...Tofindthe"DoNotTrack"setting,IneedtoscrolldownintheSecuritysection.Thecurrentviewdoesn'tshowallavailableoptions,andthe"DoNotTrack"settingislikelyfurtherdownthepage.Scrollingdownwillrevealmoresettingsoptionsthataren'tcurrentlyvisible....Action:ScrolldownintheSecuritysettingspagetorevealmoreoptions.Toolcall:scroll(-5)
+Thought:...The"ManageHTTPS/SSLcertificatesandsettings"optionisvisibleinthelist.Thisislikelywherethe"DoNotTrack"settingwouldbelocated,ascertificatemanagementisrelatedtoprivacyandsecurityfeatures....Action:Clickonthe"ManageHTTPS/SSLcertificatesandsettings"optiontoaccesscertificatemanagementsettings.Toolcall:click(x=0.527,y=0.883)
+Thought:... Looking at the available options, "Third-party cookies" is visible in the list. This option controls whether third-party cookies are blocked in Incognito mode. While this isn't exactly "Do Not Track," it is related to privacy controls. ...Action:Click on the "Third-party cookies" option in the Privacy and security section to access its settings.Toolcall:click(x=0.542, y=0.772)
+Thought:... Since the current page doesn't show the "Do Not Track" setting, the logical next action would be to continue navigating through the settings. The back button in the browser would allow the user to return to the previous page and continue their search for the "Do Not Track" setting.  ...Action:Click the back button in the browser to return to the previous page.Toolcall:click(x=0.486, y=0.242)
+Thought:... I notice there's an "Advanced" section in the current view that contains a "Send a 'Do Not Track' request with your browsing traffic" option. This is exactly what we need to enable the "Do Not Track" feature. The toggle switch for this option is currently off. ...Action:Click the toggle switch next to "Send a 'Do Not Track' request with your browsing traffic" to enable the feature.Toolcall:click(x=0.808, y=0.871)
+Thought:... The dialog explains what "Do Not Track" does and has two buttons: "Cancel" and "Confirm". To complete the task of enabling this feature, we need to confirm the action by clicking the "Confirm" button. ...Action:Click the "Confirm" button to enable the "Do Not Track" feature.Toolcall:click(x=0.708, y=0.669)
+Thought:... I notice that we're currently on the "Manage certificates" page, which is not where the "Do Not Track" setting would be located. ... To enable the "Do Not Track" feature, we need to navigate to the appropriate settings section. ...Action:Click on the "Privacy and security" option in the left sidebar menu to expand its submenu.Toolcall:click(x=0.365, y=0.317)
+Step 7
+Step 8
+Step 9
+Step 10
+Step 11
+Step 12
+Figure 10: Kimi-VL is capable of following multi-step reasoning processes to complete complex GUI tasks. In this
+example, it successfully enables the “Do Not Track” feature in the Chrome browser to enhance online privacy. The
+agent interprets each screen, identifies relevant UI elements, and performs the appropriate actions sequentially with
+clear thoughts, actions, and API calls.
+15
+
+KIMI -VL T ECHNICAL REPORT
+Please split this video into scenes, providing start time, end time, and detailed descriptions for each scene.Instruction
+ (00:00:00 -00:00:15) The scene opens with a dark room illuminated by a single light source, where a person is seen cooking food.The atmosphere is mysterious and intriguing, with the dim lighting and the steam rising from the cooking pot creating a sense of anticipation. At 00:00:05, text appears on the screen, reading "THE NORTH FACE PRESENTS," which sets the stage for the theme of the video. The person continues to cook, and at 00:00:13, the scene briefly transitions to a black screen, building suspense before the next segment. The overall mood is mysterious and intriguing, aligning with the theme of the video.(00:00:15 -00:00:36) The scene opens with a close-up of an elderly person's face, revealing their furrowed brow and weathered skin, which suggests a life of hardship and resilience (00:00:15 -00:00:20). The camera then shifts to their yellow jacket, highlighting the texture and details, and a prayer wheel comes into view, held by the person (00:00:20 -00:00:27). The focus then moves to the prayer wheel, capturing its intricate details and the serene expression of the elderly person as they spin it (00:00:27 -00:00:36). The atmosphere is calm and contemplative, with the dim lighting and the sound of spinning prayer wheels creating a sense of spiritual reflection. The scene introduces a sense of cultural and spiritual depth, emphasizing themes of contemplation, spirituality, and the passage of time.(00:00:36 -00:00:46) The scene opens with a breathtaking aerial view of majestic snow-capped mountains, setting the stage for atheme of natural grandeur and adventure. At 00:00:36, the camera captures the serene and awe-inspiring landscape, which transitions to a title card at 00:00:38, introducing the film as "A NEW FILM BY SHERPAS CINEMA." The title card remains on screen until 00:00:45, after which the camera continues to showcasethe stunning mountain range. The scene then shifts to a close-up of a person's eye at 00:00:46, subtly hinting at the personal stories and human elements that will unfold within this vast and beautiful setting. The overall mood is one of awe and inspiration, emphasizing the scale and beauty of the natural world.(00:00:46 -00:01:09) The scene opens with a close-up of an eye, which then transitions to a detailed view of a prayer wheel, emphasizing the intricate designs and the serene atmosphere of the setting (00:00:47 -00:00:56). The camera then shifts to a dynamic shot of a wave, capturing its power and beauty as it crashes (00:00:56 -00:01:00). Following this, the scene moves to an underwater view, showcasing the serene and mysterious environment beneath the surface (00:01:00 -00:01:03). The camera then pans to a majestic mountain range, highlighting the grandeur and scale of the natural world (00:01:03 -00:01:09). The mood throughout the scene is one of awe and tranquility, blending elements of nature, spirituality, and the profound connection between the individual and the vastness of the world around them.(00:01:09 -00:01:27) The scene opens with an interior shot of a room filled with numerous candles arranged on a table, creatinga serene and contemplative atmosphere. The camera then transitions to a close-up of an elderly person's face, their furrowed brow and weathered skin hinting at a life of experience and wisdom. The focus shifts to the intricate details of their yellow jacket, emphasizing the texture and craftsmanship. The scene then moves to a close-up of a prayer wheel, held gently in their hands, with the dim lighting and soft focus adding to the sense of reverence and tranquility.The camera lingers on the prayer wheel, capturing its intricate designs and the serene expression of the elderly person as they spin it, before panning out toreveal the majestic mountain range in the background. The scene then cuts to a close-up of a rock surface, its rugged texture and natural patterns standing in contrast to the previous serene and spiritual elements. The camera then shifts to a view of clouds and treetops, with the mountain peak peeking through, before moving to a close-up of snow-covered tree branches, highlighting the beauty and harshness of the natural environment. The scene then transitions to an aerialshot of a river, its winding path cutting through the landscape, before finally focusing on a close-up of a hand holding a prayer wheel. Throughout the scene, the themes of spirituality, tradition, and the beauty of nature are woven together, creating a sense of awe and reflection.(00:01:27 -00:01:39) The scene opens with a close-up of a person wearing a yellow jacket, focusing on the intricate details of their clothing, which suggests a sense of preparation and readiness. At 00:01:29, the camera shifts to a close-up of an eye, capturing the intensity and focus ofthe individual. The scene then transitions to an aerial view of a breathtaking snow-covered mountain range at 00:01:34, emphasizing the vastness and grandeur of the landscape. The camera slowly pans across the mountains, highlighting their rugged beauty and the serene, untouched nature of the environment. The overall mood of the scene is one of anticipation and awe, as the viewer is introduced to the challenging and majestic setting that lies ahead. The theme of preparation and the awe-inspiring nature of the landscape are prominently featured, setting the stage for what is to come.(00:01:39 -00:02:03) The scene opens with a group of climbers ascending a steep, snow-covered mountain, their movements slow and deliberate as they navigate the treacherous terrain (00:01:40-00:01:46). The camera then shifts to a close-up of a hand turning the pages of a book, the soft rustle of the pages providing a moment of quiet introspection (00:01:46 -00:01:50). Next, the scene transitions to an aerial view of a snow-coveredmountain range, the vast expanse emphasizing the scale and beauty of the environment (00:01:50 -00:01:56). A skier is then shown descending a steep, snowy slope, the camera following their swift and agile movements as they carve through the powder (00:01:56 -00:02:03). The sequence concludes with a close-up of a snow-covered mountain ridge, the pristine white landscape highlighting the raw power and majesty of nature (00:02:03). Throughout the scene, the theme of human determination and the awe-inspiring beauty of nature is prominently featured, capturing the essence of adventure and the challenge of conquering the elements.(00:02:03 -00:02:17) The scene opens with a close-up of a prayer wheel, its intricate details highlighted by the soft, diffusedlighting. At 00:02:03, the camera then transitions to a breathtaking view of a snow-capped mountain peak, emphasizing the grandeur and majesty of the natural world. The serene and contemplative mood is maintained as the scene shifts to a close-up of a vintage watch at 00:02:05, its hands frozen in time. This is followed by a shot of a person in a tent, illuminated by a warm, yellow light, suggesting a moment of quiet reflection or preparation. At 00:02:08, the scene cuts to a climber's harness, with carabiners attached, symbolizing readiness and the technical aspects of the climb. The tension builds as two climbers are shown on a snowy ridge at 00:02:09, their silhouettes stark against the bright snow. The climax of the scene is reached at 00:02:10, with a skier launching off a cliff, the camera capturing the breathtaking moment of the jump and the spray of snow as they descend. The sequence of skiing shots from 00:02:10 to 00:02:17 showcases the skier's skill and the dynamic, exhilarating nature of the sport, while also highlighting the inherent dangers and the thrill of the adventure.The editing effectively weaves together themes of preparation, reflection, and the intense, awe-inspiring moments of a mountain climb.(00:02:17 -00:02:42) The scene opens with a skier in a red jacket performing a mid-air trick, showcasing their skill and agility against the backdrop of a snowy mountain slope (00:02:17 -00:02:20). The camera then transitions to a skier in a blue jacket, who is captured mid-air as they soar through a cloud of snow, emphasizing the dynamic and thrilling nature of the sport (00:02:20 -00:02:23). The focus shifts to a skier in a red helmet, who is seen navigating through a dense forest of snow-covered trees, highlighting the technical aspects of the descent (00:02:23 -00:02:26). The action intensifies with a skier in a red jacket, who is shown launching off a cliff and then landing smoothly on a steep, snowy slope, demonstrating the precision and control required in such maneuvers (00:02:26 -00:02:29). The scene then transitions to a snowboarder in a red jacket, who is captured mid-air as they perform a trick, furtheremphasizing the excitement and challenge of the sport (00:02:29 -00:02:33). The camera then shifts to a breathtaking view of a bird soaring through a cloudy sky, symbolizing freedom and the vastness of the natural world (00:02:33 -00:02:42). The editing seamlessly weaves together these moments of action and tranquility, creating a narrative that explores the themes of skill, freedom, and the connection between humans and nature.(00:02:42 -00:03:05) The scene opens with a skier performing a mid-air trick against a stunning sunset backdrop, capturing the thrill and freedom of the sport (00:02:42 -00:02:46). The camera then transitions to a serene shot of incense burning, symbolizing a moment of reflection and spirituality (00:02:46 -00:02:52). This is followed by a breathtaking view of a snow-covered mountain range under a pink sky, emphasizing the awe-inspiring beauty of nature (00:02:52 -00:02:59). The scene then shifts to a surfer riding a wave, highlighting the dynamic and exhilarating aspects of water sports (00:02:59 -00:03:04). The overall mood of the scene is a blend of thrill, reflection, and the majesty of nature, with each shot seamlessly transitioning to the next, creatinga cohesive and visually captivating sequence.(00:03:05 -00:03:27) The scene begins with a serene shot of a forest, where sunlight filters through the trees, creating a peaceful and introspective atmosphere. At 00:03:06, the camera shifts to a temple, where people are seen walking, adding a sense of cultural and spiritual depth to thesetting. The temple is adorned with prayer flags, which flutter gently in the breeze, symbolizing hope and aspiration. At 00:03:08, the focus narrows to a close-up of prayer flags, their vibrant colors and intricate designs standing out against the backdrop of the temple. The scene then transitions to a forest floor covered in fallen leaves, evoking a sense of the passage of time and the beauty of nature's cycles. At 00:03:10, the camera captures the texture and patterns of theleaves, emphasizing the intricate details of the natural world. The scene continues with a shot of a cracked, dry lakebed, stretching out to the horizonunder a clear blue sky, which adds a sense of vastness and isolation. At 00:03:11, the title "INTO THE MIND" appears on the screen, setting the theme for the sequence. The camera then zooms in on the cracked earth, highlighting the textures and patterns of the ground, before fading to black at 00:03:15. The credits roll, listing the names of the cast and crew, and the scene concludes with a black screen at 00:03:27.(00:03:27 -00:03:37) The scene opens with a black screen displaying the credits, acknowledging the contributions of various individuals and organizations involved in the making of the film. The mood is neutral and informative, setting the stage for the conclusion of the narrative. As the credits roll, the screen transitions to a dark, rocky interior, likely a cave or a similar natural formation, with a wooden structure partially visible. This shift in setting suggests a change in the visual style, possibly indicating a new chapter or a different aspect of the story. The credits continue to display on the screen, providing a final overview of the production team and their roles. The scene then fades to black, marking the end of the film.
+Response
+Figure 11: Video scene splitting. Kimi-VL processes a long-form video by segmenting it into coherent scenes and
+providing detailed start/end timestamps along with fine-grained natural language descriptions for each scene.†
+4.2 Kimi-VL-A3B-Thinking: A Reasoning Extension of Kimi-VL
+Furthermore, we conduct a reasoning extension to empower Kimi-VL to reason with CoT and present a long-thinking
+version of the model, Kimi-VL-Thinking, through long-CoT activation and reinforcement learning. We validate its
+superior performance on several image benchmarks, as shown in Table 4.
+Kimi-VL-Thinking significantly improves over the base Kimi-VL model, with gains of 2.6% on MathVista, 4.7% on
+MMMU, and 15.4% on MathVision, demonstrating its capability to leverage test-time computation for deeper reasoning
+and better handling of complex multimodal queries. In Table 4, Kimi-VL-Thinking further outperforms or rivals
+state-of-the-art thinking and non-thinking models: achieving 71.3% on MathVista, outperforming GPT-4o (63.8%) and
+GPT-4o-mini (56.7%); scoring 61.7% on MMMU, surpassing GPT-4o-mini (60.0%) and Qwen2.5-VL-7B (58.6%); and
+reaching 36.8% on MathVision, exceeding GPT-4o (30.4%) and Gemma-3-27B-IT (35.5%), even QVQ-72B (35.9%).
+While marginally behind some larger-scale models on select benchmarks, Kimi-VL-Thinking accomplishes these results
+with only 3B activated parameters—orders of magnitude fewer than its counterparts—underscoring its strong efficiency
+and effectiveness in multimodal reasoning.
+Our Kimi-VL-Thinking model also exhibits strong test-time scaling properties, as shown in Figure 13. Specifically,
+increasing the max thinking token length at inference time consistently improves test-time accuracy across all three
+16
+
+KIMI -VL T ECHNICAL REPORT
+InstructionThere is an old Chinese saying: Give a man a fish, and you feed him for a day; teach a man to fish, and you feed him for a lifetime. In this representation, the author puts forward a further requirement. Find it then explain it in detail. 
+35:55
+00:00
+ResponseTherequirementisto"Teachhimthetasteoffishandmakehimhungry."Thisimpliesthatinadditiontoteachingsomeonehowtoperformataskoracquireaskill,itisalsoimportanttoinspireandmotivatethemtocontinuelearningandimprovingontheirown.Bymakingthemhungryformoreknowledgeorexperience,theywillbemorelikelytoseekoutnewchallengesandopportunitiesforgrowth,whichcanleadtogreatersuccessandfulfillmentinthelongrun.
+Figure 12: Catching and understanding key details from an hour-long video course. Kimi-VL demonstrates its ability
+to comprehend and interpret instructional video content by analyzing frame sequences and extracting conceptual
+progression over time. In this case, the model identifies a deepening of the traditional saying “Teach a man to fish, and
+you feed him for a lifetime” into a more nuanced idea: “Teach him the taste of fish and make him hungry.”‡
+Non-Thinking Model Thinking Model
+Benchmark (Metric)
+GPT-4o GPT- Qwen2.5-VL- Gemma-3- o1- QVQ-72B- Kimi- Kimi-VL-A3B-
+4o-mini 72B 7B 27B 12B 1217 Preview k1.5 Thinking Thinking-2506
+MathVision (full) (Pass@1) 30.4 - 38.1 25.1 35.5 32.1 - 35.9 38.6 36.8 56.9
+MathVista (mini) (Pass@1) 63.8 56.7 74.8 68.2 62.3 56.4 71.0 71.4 74.9 71.3 80.1
+MMMU (val) (Pass@1) 69.1 60.0 74.8 58.6 64.8 59.6 77.3 70.3 70.0 61.7 64.0
+MMMU-Pro (avg) (Pass@1) 51.7 37.6 51.1 38.1 - 32.1 - - - 43.0 46.3
+VideoMMMU (Pass@1) 61.1 - 60.2 47.0 61.8 57.2 - - - 55.5 65.2
+Table 4: Performance of Kimi-VL-Thinking and Kimi-VL-Thinking-2506 on multimodal reasoning benchmarks. The
+metrics evaluated include MathVista (mini), MMMU (val), MMMU-Pro (average), MathVision (full) and VideoMMMU,
+with results expressed in Pass@1. The Kimi-VL-Thinking-2506 performs well in most cases, showcasing the enhanced
+reasoning and processing capabilities of the “thinking” variant across different domains and scales.
+17
+
+KIMI -VL T ECHNICAL REPORT
+1 2 4 8 16
+Max Thinking Length (k tokens)
+16
+20
+24
+28
+32
+36Test Time Accuracy (%)
+18.7%
+22.6%
+29.0%
+34.0%
+36.8%MathVision
+1 2 4 8 16
+Max Thinking Length (k tokens)
+66
+67
+68
+69
+70
+71Test Time Accuracy (%)
+66.7%
+69.0%
+70.9%
+70.6%
+71.3%
+MathVista
+1 2 4 8 16
+Max Thinking Length (k tokens)
+48
+52
+56
+60Test Time Accuracy (%)49.2%
+52.4%
+56.2%
+60.1%
+61.7%
+MMMU
+Figure 13: Test-time accuracy when scaling the max thinking token length of our Kimi-VL-Thinking model.
+benchmarks. For example, on MathVision, the accuracy rises steadily from 18.7% at 1k tokens to 36.8% at 16k tokens,
+and similar upward trend is also observed onMMMU, indicating that the model is able to utilize longer reasoning chains
+for better performance. However, not all benchmarks benefit equally from longer thinking lengths. On MathVista,
+performance saturates early, with accuracy reaching 70.9% at 4k tokens and no further significant gains observed as the
+token length increases to 16k. It suggests that for this task, the necessary reasoning depth is already captured within a
+relatively short context, and additional computation does not yield further improvements.
+4.3 Kimi-VL-A3B-Thinking-2506: From Reasoning Extension to Integrated Thinking Model
+Table 5: Performance of Kimi-VL-A3B-Thinking-2506 on multimodal benchmarks that do not require extensive
+reasoning.
+Benchmark (Metric) GPT-4o Qwen2.5-
+VL-7B
+Gemma3-
+12B-IT
+Kimi-VL-A3B-
+Instruct
+Kimi-VL-A3B-
+Thinking
+Kimi-VL-A3B-
+Thinking-2506
+General Multimodal
+MMBench-EN-v1.1(Acc) 83.1 83.2 74.6 82.9 76.0 84.4
+RealWorldQA(Acc) 75.4 68.5 59.1 68.1 64.0 70.0
+OCRBench (Acc) 815 864 702 864 864 869
+MMStar (Acc) 64.0 63.0 56.1 61.7 64.2 70.4
+MMVet(Acc) 69.1 67.1 64.9 66.7 69.5 78.1
+Video
+MMVUval (Pass@1) 67.4 50.1 57.0 52.7 53.0 57.5
+Video-MME (w/ sub.)(Acc) 77.2 71.6 62.1 72.7 66.0 71.9
+OS-Agent Grounding
+ScreenSpot-Pro(Acc) 0.8 29.0 — 35.4 — 52.8
+ScreenSpot-V2(Acc) 18.1 84.2 — 92.8 — 91.4
+OSWorld-G(Acc) - 31.5 — 41.6 — 52.5
+Long Document
+MMLongBench-Doc(Acc) 42.8 29.6 21.3 35.1 32.5 42.1
+While Kimi-VL-A3B-Thinking shows excellent thinking abilities on hard reasoning tasks, we further provide the
+updated Kimi-VL-A3B-Thinking-2506§, a new reasoning variant that is not only smarter, but integrates key abilities of
+Kimi-VL-A3B-Instruct (perception, video, long-document, and OS-agent abilities) into this thinking model.
+Kimi-VL-Thinking-2506 significantly improves reasoning efficiency while reducing token consumption. As shown in
+Table 4, Kimi-VL-Thinking-2506 achieves 56.9% on MathVision (+20.1% improvement on original Kimi-VL-Thinking),
+80.1% on MathVista (+8.4%), 46.3% on MMMU-Pro (+3.2%), and 64.0% on MMMU (+2.1%), demonstrating non-
+trivial gains across multiple reasoning benchmarks. Meanwhile, while solving these hard reasoning problems, the 2506
+version reduces the average output token length by around 20% (e.g., 2.9K → 2.4K on MMMU-val and 5.8K → 4.4K
+on MathVision), facilitating it to be more efficient and user-friendly for practical deployments.
+§Tech Blog: https://huggingface.co/blog/moonshotai/kimi-vl-a3b-thinking-2506
+18
+
+KIMI -VL T ECHNICAL REPORT
+Beyond extensive reasoning tasks, Kimi-VL-Thinking demonstrates stronger visual perception capabilities (Table
+5). Compared to the previous non-thinking variant (Kimi-VL-A3B-Instruct), Kimi-VL-A3B-Thinking-2506 achieves
+competitive or superior results on general multimodal understanding benchmarks: 84.4% on MMBench-EN-v1.1, 70.4%
+on MMStar, 70.0% on RealWorldQA, and 78.4% on MMVet, underscoring its broader competence in vision-language
+tasks. In terms of token efficiency, the 2506 version only requires in average 180 tokens per answer when solving
+MMBench, 1/3 compared to the previous thinking model while improving 8.4% accuracy.
+Kimi-VL-A3B-Thinking-2506 also extends its reasoning ability to video and long-context domains. It establishes new
+state-of-the-art results among open-source models on VideoMMMU (65.2%, 4% better than GPT-4o), a challenging
+video reasoning benchmark; it also maintains robust general video understanding performance with 71.9% on Video-
+MME, matching the long video understanding ability of Kimi-VL-A3B-Instruct. It also scores 42.1% (first open-source
+model matching GPT-4o) on MMLongBench-Doc (Table 5), a 10% improvement over the previous thinking model and
+7% over the previous instruct model, demonstrating its robust ability on broader long-form visual inputs.
+As mentioned in the method part, the continual training on MoonViT (3.2 million max input pixels) of Kimi-VL-
+A3B-Thinking-2506 leads to substantial improvements on high-resolution perception and OS grounding benchmarks,
+achieving 83.2% on V* Benchmark (without external tools), 52.8% on ScreenSpot-Pro, and 52.5% on OSWorld-G (full
+set with refusal samples), showing huge improvements over both previous variants. We hope that this high-resolution
+multimodal reasoning model brings about interesting new capabilities in the real world.
+5 Conclusion, Limitation, and Future Work
+We introduce Kimi-VL, a VLM designed with a balanced approach to cover both multimodal and text-only pre-
+training/post-training, underpinned by an MoE-based architecture for scalable efficiency. Its 128K extended context win-
+dow enables precise retrieval in lengthy texts and videos, while the native-resolution encoder MoonViT helps maintain
+high accuracy with low computational overhead in ultra-high-resolution visual tasks. Additionally, Kimi-VL-Thinking
+facilitates effective long-chain reasoning in complex image and video inference. Overall, Kimi-VL demonstrates robust
+adaptability and efficiency across multimodal, long-context, and high-resolution tasks, indicating substantial potential
+for future research and industrial applications.
+However, Kimi-VL still faces several challenges:
+1. Although the current model size performs effectively for many standard tasks, it remains too limited to address
+highly specialized or domain-specific problems, or problems that are strongly dependent on language abilities,
+restricting Kimi-VL’s ability to handle extremely complex scenarios.
+2. While the reasoning capability is already strong for typical use cases, it has yet to reach its theoretical upper bound,
+particularly for intricate tasks requiring multi-step inference or deeper contextual understanding.
+3. Despite providing a 128K extended context window, due to limited parameters in its attention layers (which is
+only comparable to a 3B model), its long-context abilities is still insufficient for certain advanced applications that
+involve extremely long sequences or high-volume contextual information.
+In the future, we will tackle these challenges by scaling up the model size, expanding pre-training data, and enhancing
+post-training algorithms. Our next steps include optimizing Kimi-VL and releasing larger versions, as well as refining
+post-training and test-time scaling mechanisms for a better thinking model. These efforts will pave the way for more
+advanced applications in both research and industry.
+References
+Amazon Web Services. Amazon Simple Storage Service (Amazon S3). Web. Available at:https://aws.amazon.com/
+s3/. 2023. URL: https://aws.amazon.com/s3/ (visited on 12/15/2023).
+Bai, Shuai et al. Qwen2.5-VL Technical Report. 2025. arXiv: 2502.13923 [cs.CV] . URL: https://arxiv.org/
+abs/2502.13923.
+Bonatti, Rogerio et al. Windows Agent Arena: Evaluating Multi-Modal OS Agents at Scale. 2024. arXiv: 2409.08264
+[cs.AI]. URL: https://arxiv.org/abs/2409.08264.
+Chen, Lin et al. “Are We on the Right Way for Evaluating Large Vision-Language Models?” In: arXiv preprint
+arXiv:2403.20330 (2024).
+Chen, Tianqi et al. Training Deep Nets with Sublinear Memory Cost . 2016. arXiv: 1604 . 06174 [cs.LG]. URL:
+https://arxiv.org/abs/1604.06174.
+19
+
+KIMI -VL T ECHNICAL REPORT
+Cheng, Kanzhi et al. “Seeclick: Harnessing gui grounding for advanced visual gui agents”. In: arXiv preprint
+arXiv:2401.10935 (2024).
+Dao, Tri et al.FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. 2022. arXiv: 2205.14135
+[cs.LG]. URL: https://arxiv.org/abs/2205.14135.
+DeepSeek-AI, Daya Guo, et al. DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning.
+2025. arXiv: 2501.12948 [cs.CL]. URL: https://arxiv.org/abs/2501.12948.
+DeepSeek-AI, Aixin Liu, et al. DeepSeek-V3 Technical Report. 2025. arXiv: 2412.19437 [cs.CL] . URL: https:
+//arxiv.org/abs/2412.19437.
+Dehghani, Mostafa et al. Patch n’ Pack: NaViT, a Vision Transformer for any Aspect Ratio and Resolution. 2023. arXiv:
+2307.06304 [cs.CV]. URL: https://arxiv.org/abs/2307.06304.
+Fedus, William, Barret Zoph, and Noam Shazeer. Switch Transformers: Scaling to Trillion Parameter Models with
+Simple and Efficient Sparsity. 2022. arXiv: 2101.03961 [cs.LG]. URL: https://arxiv.org/abs/2101.03961.
+Fu, Chaoyou et al. “Video-MME: The First-Ever Comprehensive Evaluation Benchmark of Multi-modal LLMs in
+Video Analysis”. In: arXiv:2405.21075 (2024).
+Fu, Xingyu et al. “Blink: Multimodal large language models can see but not perceive”. In:European Conference on
+Computer Vision. Springer. 2024, pp. 148–166.
+Gadre, Samir Yitzhak et al. “Datacomp: In search of the next generation of multimodal datasets”. In: Advances in
+Neural Information Processing Systems 36 (2024).
+Grauman, Kristen et al. “Ego4d: Around the world in 3,000 hours of egocentric video”. In:Proceedings of the IEEE/CVF
+conference on computer vision and pattern recognition. 2022, pp. 18995–19012.
+Guo, Jarvis et al. MAmmoTH-VL: Eliciting Multimodal Reasoning with Instruction Tuning at Scale . 2024. arXiv:
+2412.05237 [cs.CL]. URL: https://arxiv.org/abs/2412.05237.
+Hu, Kairui et al. “Video-MMMU: Evaluating Knowledge Acquisition from Multi-Discipline Professional Videos”. In:
+arXiv preprint arXiv:2501.13826 (2025).
+Huang, Yanping et al. GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism. 2019. arXiv:
+1811.06965 [cs.CV]. URL: https://arxiv.org/abs/1811.06965.
+Jacobs, Sam Ade et al. DeepSpeed Ulysses: System Optimizations for Enabling Training of Extreme Long Sequence
+Transformer Models. 2023. arXiv: 2309.14509 [cs.LG]. URL: https://arxiv.org/abs/2309.14509.
+Jordan, Keller et al. Muon: An optimizer for hidden layers in neural networks. 2024. URL: https://kellerjordan.
+github.io/posts/muon/.
+Kembhavi, Aniruddha et al. “A diagram is worth a dozen images”. In: European conference on computer vision .
+Springer. 2016, pp. 235–251.
+Korthikanti, Vijay et al. Reducing Activation Recomputation in Large Transformer Models. 2022. arXiv: 2205.05198
+[cs.LG]. URL: https://arxiv.org/abs/2205.05198.
+Laurençon, Hugo et al. “Obelics: An open web-scale filtered dataset of interleaved image-text documents”. In:Advances
+in Neural Information Processing Systems 36 (2024).
+Li, Bo et al. LLaVA-OneVision: Easy Visual Task Transfer . 2024. arXiv: 2408 . 03326 [cs.CV] . URL: https :
+//arxiv.org/abs/2408.03326.
+Li, Dongxu et al. Aria: An Open Multimodal Native Mixture-of-Experts Model. 2024. arXiv: 2410.05993 [cs.CV].
+URL: https://arxiv.org/abs/2410.05993.
+Li, Kaixin et al. “ScreenSpot-Pro: GUI Grounding for Professional High-Resolution Computer Use”. In: Workshop on
+Reasoning and Planning for Large Language Models. 2025.
+Li, Shen et al. PyTorch Distributed: Experiences on Accelerating Data Parallel Training. 2020. arXiv: 2006.15704
+[cs.DC]. URL: https://arxiv.org/abs/2006.15704.
+Liu, Hao, Matei Zaharia, and Pieter Abbeel. Ring Attention with Blockwise Transformers for Near-Infinite Context.
+2023. arXiv: 2310.01889 [cs.CL]. URL: https://arxiv.org/abs/2310.01889.
+Liu, Jingyuan et al. “Muon is Scalable for LLM Training”. In: arXiv preprint arXiv:2502.16982 (2025).
+– “Muon is Scalable for LLM Training”. In: arXiv preprint arXiv:2502.16982 (2025).
+Liu, Yuan et al. “MMBench: Is Your Multi-modal Model an All-around Player?” In:arXiv:2307.06281 (2023).
+Liu, Yuliang et al. “On the hidden mystery of ocr in large multimodal models”. In:arXiv e-prints (2023), arXiv–2305.
+Lu, Pan et al. “Mathvista: Evaluating mathematical reasoning of foundation models in visual contexts”. In: arXiv
+preprint arXiv:2310.02255 (2023).
+Mangalam, Karttikeya, Raiymbek Akshulakov, and Jitendra Malik. “Egoschema: A diagnostic benchmark for very
+long-form video language understanding”. In: Advances in Neural Information Processing Systems 36 (2023),
+pp. 46212–46244.
+Mathew, Minesh et al. “Infographicvqa”. In: Proceedings of the IEEE/CVF Winter Conference on Applications of
+Computer Vision. 2022, pp. 1697–1706.
+Narayanan, Deepak et al. Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM. 2021.
+arXiv: 2104.04473 [cs.CL]. URL: https://arxiv.org/abs/2104.04473.
+20
+
+KIMI -VL T ECHNICAL REPORT
+OpenAI. “Learning to reason with LLMs”. In: (2024). URL: https://openai.com/index/learning-to-reason-
+with-llms/.
+OpenAI et al. GPT-4o System Card. 2024. arXiv: 2410.21276 [cs.CL] . URL: https://arxiv.org/abs/2410.
+21276.
+Rajbhandari, Samyam et al. “Zero: Memory optimizations toward training trillion parameter models”. In: SC20:
+International Conference for High Performance Computing, Networking, Storage and Analysis. IEEE. 2020, pp. 1–
+16.
+Schuhmann, Christoph et al. “Laion-5b: An open large-scale dataset for training next generation image-text models”.
+In: Advances in Neural Information Processing Systems 35 (2022), pp. 25278–25294.
+Shangguan, Ziyao et al. “TOMATO: Assessing Visual Temporal Reasoning Capabilities in Multimodal Foundation
+Models”. In: International Conference on Learning Representations. 2025. URL: https://openreview.net/
+forum?id=fCi4o83Mfs.
+Su, Dan et al. “Nemotron-CC: Transforming Common Crawl into a Refined Long-Horizon Pretraining Dataset”. In:
+arXiv preprint arXiv:2412.02595 (2024).
+Su, Jianlin et al. RoFormer: Enhanced Transformer with Rotary Position Embedding . 2023. arXiv: 2104 . 09864
+[cs.CL]. URL: https://arxiv.org/abs/2104.09864.
+Team, Gemini et al. Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context. 2024. arXiv:
+2403.05530 [cs.CL]. URL: https://arxiv.org/abs/2403.05530.
+Team, Gemma et al. Gemma 3 Technical Report. 2025. arXiv: 2503.19786 [cs.CL]. URL: https://arxiv.org/
+abs/2503.19786.
+Team, Kimi et al. “Kimi k1. 5: Scaling reinforcement learning with llms”. In: arXiv preprint arXiv:2501.12599 (2025).
+Tong, Shengbang et al. Cambrian-1: A Fully Open, Vision-Centric Exploration of Multimodal LLMs . 2024. arXiv:
+2406.16860 [cs.CV]. URL: https://arxiv.org/abs/2406.16860.
+Wang, Ke et al. “Measuring multimodal mathematical reasoning with math-vision dataset”. In: arXiv preprint
+arXiv:2402.14804 (2024).
+Wei, Haoran et al. “General OCR Theory: Towards OCR-2.0 via a Unified End-to-end Model”. In: arXiv preprint
+arXiv:2409.01704 (2024).
+Wu, Haoning et al. “Longvideobench: A benchmark for long-context interleaved video-language understanding”. In:
+Advances in Neural Information Processing Systems 37 (2024), pp. 28828–28857.
+Wu, Zhiyong et al. “Os-atlas: A foundation action model for generalist gui agents”. In:arXiv preprint arXiv:2410.23218
+(2024).
+Wu, Zhiyu et al. DeepSeek-VL2: Mixture-of-Experts Vision-Language Models for Advanced Multimodal Understanding.
+2024. arXiv: 2412.10302 [cs.CV]. URL: https://arxiv.org/abs/2412.10302.
+x.ai. “Grok-1.5 Vision Preview”. In: (2024). URL: https://x.ai/news/grok-1.5v.
+Xie, Tianbao et al. “Osworld: Benchmarking multimodal agents for open-ended tasks in real computer environments”.
+In: Advances in Neural Information Processing Systems 37 (2024), pp. 52040–52094.
+Xu, Yiheng et al. Aguvis: Unified Pure Vision Agents for Autonomous GUI Interaction . 2024. arXiv: 2412.04454
+[cs.CL].
+Yang, Jihan et al. “Thinking in space: How multimodal large language models see, remember, and recall spaces”. In:
+arXiv preprint arXiv:2412.14171 (2024).
+Yu, Jiahui et al.CoCa: Contrastive Captioners are Image-Text Foundation Models. 2022. arXiv: 2205.01917 [cs.CV].
+URL: https://arxiv.org/abs/2205.01917.
+Yu, Weihao et al. “Mm-vet: Evaluating large multimodal models for integrated capabilities”. In:International conference
+on machine learning. PMLR. 2024.
+Yue, Xiang, Yuansheng Ni, et al. “Mmmu: A massive multi-discipline multimodal understanding and reasoning
+benchmark for expert agi”. In:Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition.
+2024, pp. 9556–9567.
+Yue, Xiang, Xingwei Qu, et al. “Mammoth: Building math generalist models through hybrid instruction tuning”. In:
+arXiv preprint arXiv:2309.05653 (2023).
+Zhai, Xiaohua et al. Sigmoid Loss for Language Image Pre-Training . 2023. arXiv: 2303 . 15343 [cs.CV]. URL:
+https://arxiv.org/abs/2303.15343.
+Zhao, Yilun et al. “MMVU: Measuring Expert-Level Multi-Discipline Video Understanding”. In: arXiv preprint
+arXiv:2501.12380 (2025).
+Zhou, Junjie et al. “Mlvu: A comprehensive benchmark for multi-task long video understanding”. In: arXiv preprint
+arXiv:2406.04264 (2024).
+Zhu, Wanrong et al. “Multimodal c4: An open, billion-scale corpus of images interleaved with text”. In:Advances in
+Neural Information Processing Systems 36 (2024).
+21
+
+KIMI -VL T ECHNICAL REPORT
+Appendix
+A Contributions
+Core Contributors
+Bohong Yin
+Bowei Xing
+Cheng Chen
+Chu Wei
+Dehao Zhang
+Dongliang Wang
+Haoning Wu∗
+Haotian Yao
+Haoyu Lu∗
+Hao Yang
+Kun Ouyang
+Lin Sui
+Xinyuan Wang#
+Xinyu Zhou
+Yang Li
+Y . Charles∗
+Yiping Bao
+Yimin Chen
+Yuanxin Liu
+Yuxin Wu
+Zaida Zhou
+Zhaowei Li
+Zhiqi Huang
+Zhilin Yang
+Ziwei Chen
+Contributors
+Angang Du
+Bowen Qu
+Bowen Wang#
+Chenlin Zhang
+Chenzhuang Du
+Congcong Wang
+Dikang Du
+Enming Yuan
+Enzhe Lu
+Fang Li
+Flood Sung
+Guangda Wei
+Guokun Lai
+Han Zhu
+Hao Ding
+Hao Hu
+Hao Zhang
+Heng Wang
+Hongcheng Gao
+Huabin Zheng
+Jiaming Li
+Jianlin Su
+Jianzhou Wang
+Jiaqi Deng#
+Jiezhong Qiu
+Jin Xie
+Jinhong Wang
+Jingyuan Liu
+Junjie Yan
+Liang Chen
+Longhui Yu
+Mengfan Dong
+Mengnan Dong
+Nuo Xu
+Pengyu Cheng
+Qizheng Gu
+Runjie Zhou
+Shaowei Liu
+Sihan Cao
+Tao Yu#
+Tianhui Song
+Tongtong Bai
+Weiran He
+Wei Song
+Weixiao Huang
+Weixin Xu
+Xiaokun Yuan
+Xingzhe Wu
+Xingcheng Yao
+Xinhao Li
+Xinxing Zu
+Yangyang Hu
+Yan Zhong
+Yanru Chen
+Yibo Miao
+Yejie Wang
+Yibo Liu
+Yidao Qin
+Yiqin Wang
+Yongsheng Kang
+Yuhao Dong
+Yulun Du
+Yuzhi Wang
+Yuzi Yan
+Zhejun Jiang
+Zheng Zhang
+Zihao Huang
+Zijia Zhao
+Zongyu Lin
+22
+
+KIMI -VL T ECHNICAL REPORT
+* Project lead(s).
+# The University of Hong Kong, Moonshot.ai
+The listing of authors is in alphabetical order based on their first names.
+B Evaluation Details
+B.1 Image Benchmark
+MMMU (Yue, Ni, et al. 2024) encompasses a carefully curated collection of 11.5K multimodal questions sourced
+from college exams, quizzes, and textbooks. These questions span six major academic fields: Art & Design, Business,
+Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering.
+MMBench-EN-v1.1 (Yuan Liu et al. 2023) is a fine-grained benchmark that contains 2974 multiple-choice questions,
+covering 20 ability dimensions. It incorporate perception and reasoning as the top-level ability dimensions in its ability
+taxonomy, leading to different levels of evaluation in various ability dimensions.
+MMStar (Lin Chen et al. 2024) is an elite vision-indispensable multimodal benchmark comprising 1,500 challenge
+samples meticulously selected by humans. It is designed to benchmark 6 core capabilities and 18 detailed axes, aiming
+to evaluate the multimodal capacities of LVLMs with a carefully balanced and purified selection of samples.
+MMVet (W. Yu et al. 2024) is designed based on the insight that the intriguing ability to solve complicated tasks is
+often achieved by a generalist model being able to integrate different core vision-language capabilities. It defines 6 core
+VL capabilities and examines the 16 integrations of interest derived from the capability combination.
+RealWorldQA (x.ai 2024) is a benchmark designed to evaluate the real-world spatial understanding capabilities of
+multimodal models. It assesses how well the models comprehend physical environments. The benchmark consists of
+over 700 images, each accompanied by a question and a verifiable answer, and these images are drawn from various
+real-world scenarios.
+AI2D (Kembhavi et al. 2016) is a dataset of over 5000 grade school science diagrams with over 150000 rich annotations,
+their ground truth syntactic parses, and more than 15000 corresponding multiple choice questions.
+MathVision (K. Wang et al. 2024) is a carefully curated collection of 3,040 high-quality mathematical problems with
+visual contexts that are sourced from real math competitions. It covers 16 distinct mathematical disciplines and is
+graded across 5 levels of difficulty. This dataset offers a comprehensive and diverse set of challenges, making it ideal
+for evaluating the mathematical reasoning abilities of LMMs.
+MathVista (P. Lu et al. 2023) is a benchmark that integrates challenges from a variety of mathematical and visual
+tasks, demanding participants to exhibit fine-grained, deep visual understanding along with compositional reasoning to
+successfully complete the tasks.
+BLINK (X. Fu et al. 2024) is a benchmark designed to evaluate multi-image visual cognition, encompassing tasks
+related to depth relationships, feature matching, digital forensics, and spatiotemporal reasoning. It features a diverse set
+of multi-image perceptual similarity tasks, validated through standardized protocols.
+InfoVQA (Mathew et al. 2022) is a dataset specifically designed to assess models’ capabilities in interpreting and
+reasoning with complex infographics that integrate text, graphics, and visual elements. Model performance on this
+dataset is evaluated using the ANLS metric on the test set.
+OCRBench (Yuliang Liu et al. 2023) evaluates the OCR capabilities of MLLMs across five tasks: text recognition,
+scene text VQA, document VQA, key information extraction, and handwritten math expression recognition. The
+benchmark is scored out of a maximum of 1000 points.
+B.2 Video and Long Document Benchmark
+VideoMMMU (K. Hu et al. 2025) is a video benchmark designed to evaluate the college-level knowledge acquisition
+capabilities of large multimodal models. It consists of 300 expert-level videos and 900 human-annotated questions. The
+videos span six diverse academic disciplines: Art, Humanities, Medicine, Business, Science, and Engineering. The
+questions are structured to align with three cognitive stages: Perception, Comprehension, and Adaptation.
+MMVU (Y . Zhao et al. 2025) is a video benchmark designed to evaluate the expert-level video understanding ability.
+The benchmark contains 3,000 expert-annotated questions over 1,529 videos, which span 27 subjects from four core
+disciplines: Science, Healthcare, Humanities & Social Sciences, and Engineering.
+23
+
+KIMI -VL T ECHNICAL REPORT
+Video-MME (C. Fu et al. 2024) is a video benchmark that consists of 900 manually selected videos (totaling 254
+hours length), and 2,700 QA pairs. The videos, varying in duration, are categorized into 30 fine-grained classes across
+six diverse domains: Knowledge, Film & Television, Sports Competition, Artistic Performance, Life Record, and
+Multilingual content. Evaluations are conducted under two different settings: with and without subtitles.
+MLVU (J. Zhou et al. 2024) is designed to evaluate the model performance in comprehending long videos from multiple
+aspects. It consists of 1,730 videos along with 3,102 corresponding question-answer pairs (2,593 in dev set and 509 in
+test set). Videos of this benchmark are collected from multiple scenarios, including Sport, Ego-centric, Life Record,
+Tutorial, etc. The close-ended task set of MLVU comprises 7 different tasks: Action Order, Action Count, Topic
+Reasoning, Anomaly Recognition, Plot QA, Ego Reasoning, and Needle QA.
+LongVideoBench (H. Wu et al. 2024) is a video question-answering benchmark designed to evaluate the long-form
+multimodal perception and relation capability of large multimodal models. The benchmark includes 3,763 web-
+collected videos spanning various lengths and themes, along with their corresponding subtitles. It includes 6,678
+human-annotated multiple-choice questions, distributed across 17 fine-grained categories, which accesses different
+aspects of video-language understanding.
+EgoSchema (Mangalam et al. 2023) is a video benchmark designed to evaluate the long-form video understanding
+capabilities within the ego-centric scenario. Derived from Ego4D (Grauman et al. 2022), the benchmark comprises over
+5,031 multiple choice question-answer pairs spanning more than 250 hours real-world videos with a semi-automatic
+data pipeline.
+VSI-Bench (Yang et al. 2024) is designed to evaluate the visual-spatial comprehensive capabilities of large multimodal
+models. It consists of over 5,000 question-answer pairs across around 290 real indoor-scene videos.
+TOMATO(Shangguan et al. 2025) is a video benchmark comprises 1,484 human-annotated question-answer pairs and
+1,417 videos. TOMATO focuses on evaluating the temporal reasoning capabilities of large multimodal models, including
+action counting, direction prediction, rotation analysis, shape & trend detection, velocity & frequency estimation, and
+visual cue interpretation.
+B.3 Agent Benchmark
+ScreenSpot V2 (Zhiyong Wu et al. 2024) is an enhanced version of the ScreenSpot (K. Cheng et al. 2024) benchmark,
+which focuses on evaluating the performance of GUI grounding models across multiple platforms, including web,
+desktop, and mobile interfaces. This updated version addresses several issues identified in the original ScreenSpot
+dataset, such as incorrect or ambiguous annotations, spelling mistakes, and mislabeled bounding boxes.
+ScreenSpot Pro (K. Li et al. 2025) is a benchmark for evaluating GUI grounding in high-resolution, complex UI
+environments. It contains 1,581 real-world, high-resolution images and expert-annotated tasks from diverse professional
+domains. Including domain-specific interface conventions that challenge models to understand professional-grade
+interfaces beyond consumer applications.
+OSWorld (T. Xie et al. 2024) is a pioneering scalable, real computer environment designed for multimodal agents,
+facilitating task setup, execution-based evaluation, and interactive learning across multiple operating systems, including
+Ubuntu, Windows, and macOS. It serves as a unified platform for evaluating open-ended computer tasks that involve
+arbitrary applications, addressing the limitations of existing benchmarks that often lack interactive environments or are
+confined to specific applications or domains.
+WindowsAgentArena (Bonatti et al. 2024) is a benchmark designed to evaluate multimodal agents in realistic Windows
+environments. Built on the OSWorld framework, it allows agents to interact with a full range of applications and web
+tools. The benchmark is scalable and can complete evaluations in under 20 minutes on Azure. It offers insights into
+agent performance, highlighting the potential for future research in agent development and task automation.
+24

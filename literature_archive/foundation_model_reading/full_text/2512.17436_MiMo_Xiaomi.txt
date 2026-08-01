@@ -1,0 +1,622 @@
+Xiaomi MiMo-VL-Miloco Technical Report
+MiLM-Plus Xiaomi
+Abstract
+We open-sourceMiMo-VL-Miloco-7Band its quantized variantMiMo-VL-
+Miloco-7B-GGUF, a pair of home-centric vision-language models that achieve
+strong performance on both home-scenario understanding and general multimodal
+reasoning. Built on the MiMo-VL-7B backbone, MiMo-VL-Miloco-7B is spe-
+cialized for smart-home environments, attaining leading F1 scores on gesture
+recognition and common home-scenario understanding, while also delivering con-
+sistent gains across video benchmarks such as Video-MME, Video-MMMU, and
+Charades-STA, as well as language understanding benchmarks including MMMU-
+Pro and MMLU-Pro. In our experiments, MiMo-VL-Miloco-7B outperforms
+strong closed-source and open-source baselines on home-scenario understand-
+ing and several multimodal reasoning benchmarks. To balance specialization
+and generality, we design a two-stage training pipeline that combines supervised
+fine-tuning with reinforcement learning based on Group Relative Policy Opti-
+mization, leveraging efficient multi-domain data. We further incorporate chain-
+of-thought supervision and token-budget-aware reasoning, enabling the model to
+learn knowledge in a data-efficient manner while also performing reasoning effi-
+ciently. Our analysis shows that targeted home-scenario training not only enhances
+activity and gesture understanding, but also improves text-only reasoning with
+only modest trade-offs on document-centric tasks. Model checkpoints, quantized
+GGUF weights, and our home-scenario evaluation toolkit are publicly available
+at https://github.com/XiaoMi/xiaomi-mimo-vl-miloco to support research and de-
+ployment in real-world smart-home applications.
+Figure 1: Per-category F1 score comparison on home-scenario gesture recognition (left) and daily-
+activity recognition (right) benchmarks for MiMo-VL-Miloco-7B and baseline models (MiMo-VL-
+7B-SFT-2508, Gemini-2.5-Pro, and Qwen2.5-VL-7B). MiMo-VL-Miloco-7B attains the highest F1
+scores on most gestures (OK, Thumbs Up, V Sign, Shaka Sign, Open Palm) and activities (Watch
+TV , Reading, Play on the Phone, Play Esports, Workout), with the annotated values indicating its
+per-category F1 scores.
+arXiv:2512.17436v2  [cs.CV]  22 Dec 2025
+
+1 Introduction
+Recently, vision-language models and, more broadly, multimodal large language models have rapidly
+become the core infrastructure for modern AI systems, enabling agents to perceive visual scenes,
+reason over images and videos, and interact with the physical and digital worlds in a unified way
+[2, 23, 27, 39, 21, 20, 19]. In the smart-home domain, these capabilities are especially critical: to
+move beyond simple “if-this-then-that” rules, home systems must be able to understand what people
+are doing, interpret fine-grained visual cues, and make safe, context-aware decisions in real time
+[4, 10, 40]. In particular, privacy and latency constraints call for compact models that can run locally
+on edge devices instead of relying solely on cloud inference [9, 32].
+In this work, we presentMiMo-VL-Miloco-7B, a 7B-parameter vision-language model tailored for
+home scenarios and deployed as the perception core of the XiaoMi localcopilot framework. Built
+on top of MiMo-VL-7B [38], MiMo-VL-Miloco-7B inherits a strong general-purpose multimodal
+backbone and further specializes it for home environments, covering recognizing common daily
+activities (Play Esports, Workout, Watch TV , Reading, Play on the Phone) and understanding hand
+gestures (Thumbs Up, V Sign, Open Palm, OK, Shaka Sign). By connecting to Xiaomi MiJIA
+cameras as visual sensors and integrating with the Xiaomi IoT ecosystem, the model enables rich
+automation, ranging from instructions such as “turn on the reading lamp when someone is reading”
+to more complex instructions such as “if the baby cries after 10 p.m., dim the nursery lights to 10 %,
+play white-noise audio on the ceiling speaker, and push a quiet notification to the parents’ phones.”
+[34, 26].
+The development of MiMo-VL-Miloco-7B follows a two-stage training pipeline designed to inject
+valuable home-scenario knowledge while preserving the base model’s generality [23, 8]. In the first
+stage, we perform supervised fine-tuning (SFT) on curated data from home environments. This stage
+emphasizes chain-of-thought supervision so that the model not only predicts labels but also learns
+explicit reasoning patterns about activities in home scenarios [37]. In addition, we adopt token-budget-
+aware reasoning data that encourage concise, task-oriented responses. Together, chain-of-thought
+supervision and token-budget-aware reasoning enable the model to learn knowledge in a data-efficient
+manner while also performing reasoning efficiently, which is important for latency-sensitive edge
+deployment [44, 47].
+In the second stage, we apply GRPO-based reinforcement learning on top of the SFT model [ 30,
+14]. Leveraging the Time-R1 [ 35] data construction strategy, we assemble efficient training sets
+across multiple domains and optimize the model with mixed reinforcement signals [ 35, 31] to
+further enhance its perception and reasoning capabilities while avoiding over-specialization. This
+stage focuses primarily on improving performance on generic multimodal benchmarks [ 41, 11],
+while maintaining strong home-scenario understanding, including gesture recognition and activity
+classification. Empirically, MiMo-VL-Miloco-7B achieves strong F1 scores on internal home-
+scenario evaluations, while also showing gains on several public multimodal understanding and
+reasoning benchmarks[35, 41, 11], with only modest degradation on tasks that are less relevant to its
+target use cases, such as OCR or mathematical reasoning.
+Our contributions can be summarized as follows:
+1. Home-centric multimodal modeling on the edge.We introduce MiMo-VL-Miloco-7B, an
+edge-deployable vision-language model specifically optimized for home environments, ca-
+pable of robust activity recognition, gesture understanding, and natural-language interaction
+with home scenarios, achieving competitive performance across multimodal benchmarks.
+2. A two-stage tuning framework for home scenarios.We design a effective two-stage
+training pipeline, in which the first stage performs chain-of-thought enhanced supervised
+fine-tuning and the second stage applies GRPO-based reinforcement learning with difficulty-
+aware data filtering. This training strategy substantially improves home-scenario understand-
+ing, while preserving the generalization ability of the pretrained backbone.
+3. Open ecosystem for smart-home research and deployment.We release both MiMo-VL-
+Miloco-7B and its quantized variant MiMo-VL-Miloco-7B-GGUF, along with a Gradio
+demo and integration into the open-source Xiaomi Miloco framework. These resources
+provide a practical foundation for researchers and developers to explore privacy-preserving,
+on-device multimodal intelligence in real-world smart-home settings.
+2
+
+Taken together, these efforts advance smart-home systems beyond manual rule configuration toward
+genuinely context-aware, privacy-preserving multimodal agents that can continuously “see and think”
+alongside users in their daily lives. By serving as a unified, edge-deployable perception and reasoning
+backbone for home environments, MiMo-VL-Miloco-7B provides a practical foundation for research
+and large-scale deployment of vision-language copilots in real-world smart-home ecosystems.
+2 Approach
+2.1 Supervised Fine-Tuning (SFT)
+In this section, we first present the architectural design of MiMo-VL-Miloco-7B, followed by a
+detailed description of the data composition and the training implementation for the supervised
+fine-tuning stage.
+2.1.1 Architecture of MiMo-VL-Miloco
+The architecture of MiMo-VL-Miloco-7B consists of three primary components: (1) a Vision
+Transformer (ViT) supporting native resolution, which encodes visual inputs; (2) a projector composed
+of a Multi-Layer Perceptron (MLP), serving to align visual encodings with the latent space of the
+Large Language Model (LLM); and (3) the LLM backbone, responsible for text comprehension and
+reasoning. All components, including the vision encoder, the projector, and the LLM backbone,
+are initialized using their respective pre-trained weights from MiMo-VL[38], thereby inheriting its
+exceptional capabilities in multimodal understanding and reasoning. We show the architecture of
+MiMo-VL-Miloco-7B in Fig. 2.
+MiMo-VL-Miloco-7B
+Vision Transformer + MLP Projector 🕮 Tokenizer
+… … … …
+… … … …
+<think> </think>… … … ResponsePrefilling Tokens
+Instructions
+User Prompt:  
+- Does the picture meet the following conditions: 
+Someone is making the shaka sign?
+-   What family activity or family-life science is depicted 
+in this image?
+Prefilling Tokens Final Answer
+Visual Tokens User Prompt
+Home
+Scene
+Gesture
+Figure 2: The overview of MiMo-VL-Miloco-7B. The model takes as input a video depicting either
+a home scene or user gestures. Video frames are encoded by a Vision Transformer (ViT) and
+projected into the LLM embedding space via an MLP projector, forming visual tokens. In parallel,
+the instruction prompt is tokenized into text tokens. The visual and text tokens are then concatenated
+and fed into the LLM backbone, which generates the final response.
+2.1.2 Data
+We construct a comprehensive training set designed to enhance home-scenario understanding while
+maintaining general-purpose competence. Our training data comprises a carefully curated mix
+of proprietary home-scenario data and general multimodal data. Each subset undergoes rigorous
+processing to ensure high quality.
+Home-Scenario Data.Addressing the scarcity of open-source data for common home scenarios
+and gesture recognition, we establish a strict internal data collection pipeline. Specifically, we collect
+data covering common daily activities including Play Esports, Workout, Watch TV , Reading, Play on
+the Phone and gesture recognition including Thumbs Up, V Sign, Open Palm, OK, Shaka Sign.
+3
+
+To ensure both data diversity and annotation quality, we define precise collection protocols for
+each category. V olunteers are recruited to perform the target activities and gestures under varied
+environmental conditions while adhering to the predefined rules. Prior to data acquisition, all
+participants receive standardized training to ensure a clear and consistent understanding of the
+protocols. During the annotation process, deviations from the protocols are corrected in real time.
+Finally, all annotations undergo a comprehensive review by experienced AI researchers to eliminate
+residual errors, resulting in a high-quality, carefully verified home-scenario dataset.
+To fully exploit the informational richness of each video, we move beyond simple label prediction
+by generatingchain-of-thought (CoT)annotations. To facilitate effective knowledge transfer
+across different scenarios, we standardize the reasoning patterns used in these CoT sequences. This
+knowledge-intensive reasoning data enables the model to develop a deeper understanding of home
+scenarios, even with limited labeled data.
+However, for edge deployment, the increased inference latency associated with long CoT generation
+is often prohibitive. To address this, we introducetoken-budget-awarereasoning data for model
+training, which prompts the model to output direct answers without explicit reasoning steps. By
+integrating both chain-of-thought data and token-budget-aware data, the model learns to internalize
+knowledge in a data-efficient manner while maintaining efficient inference speed.
+General Data.To preserve the model’s general visual understanding and reasoning capabilities, we
+utilize the training corpus from the MiMo-VL. This corpus encompasses a wide range of data types to
+enhance capabilities including general images understanding, image grounding, OCR understanding,
+video understanding, and multimodal reasoning, organized into the following tasks:
+• VQA.This strengthens the model’s understanding of a broad spectrum of multimodal tasks,
+supporting its role as a general-purpose assistant.
+• Grounding.These datasets enhance cross-modal localization across various domains such as
+general image grounding and GUI grounding, unlocking the model’s potential as a GUI agent.
+• OCR.Covering long documents, information graphics, and charts, the data significantly improves
+information extraction capabilities across multiple domains.
+• Video.This includes dense captioning with timestamped event annotations, temporal grounding
+to link events to timelines, and synthetic QA data for complex reasoning. These tasks bolster the
+model’s robust understanding of temporal dynamics in long videos.
+• Reasoning.Containing rich reasoning processes, the reasoning data has been proven in MiMo-VL
+to significantly enhance perception and reasoning. In our experiments, incorporating an appropriate
+proportion of this data not only maintained general understanding but also improved performance
+in home-scenario understanding.
+2.1.3 Training Process
+We utilize the AdamW[18] optimizer with a total batch size of 128 and a learning rate of 1×10 −5.
+The maximum sequence length was set to 32,768, and we applied a warmup ratio of 0.03. We
+performed full-parameter fine-tuning, updating all model parameters during training. By training on
+our combined proprietary home-scenario data and multimodal corpus from MiMo-VL, the model
+achieved a significant improvement in gesture and daily activity recognition, while preserving its
+robust general multimodal reasoning capabilities.
+2.2 Reinforcement Learning (RL)
+While the SFT stage significantly enhanced the model’s proficiency in home-scenario understanding,
+our analysis reveals a performance degradation in general multimodal tasks, specifically video
+understanding, GUI grounding, and complex multimodal reasoning. This phenomenon, consistent
+with findings in continual learning literature[5], suggests a trade-off where acquiring new domain-
+specific knowledge leads to catastrophic forgetting of previously learned capabilities. To mitigate this,
+we employ RL to restore general competence while ensuring that the home-scenario performance
+remains competitive with the SFT baseline.
+4
+
+2.2.1 Data Construction
+We conduct a systematic analysis of the post-SFT model to identify domains suffering from regression
+and construct a targeted RL dataset accordingly. The data composition is as follows:
+• Video Understanding.To ameliorate the model’s grasp of temporal dynamics, we focus on the
+temporal grounding task. By training the model to precisely locate time segments corresponding
+to textual queries, we aim to improve overall video comprehension. Our data sources include
+VTG-IT[15], TimeIT[29], TimePro[43], HTStep[1], and LongVid[22].
+• GUI Grounding.We curate data from multiple sources. These samples are designed to recover
+and enhance the model’s ability to interpret and localize elements within graphical user interfaces.
+• Multimodal Reasoning.To bolster general reasoning capabilities, we select multimodal STEM
+problems, which include a substantial number of mathematics-related queries.
+Inspired by the Time-R1 data construction strategy [35], we apply a difficulty filter to exclude samples
+that were either trivial or excessively difficult. This filtering strategy yields two key benefits: (1) it
+stabilizes training by providing consistent optimization gradients, and (2) it accelerates convergence
+while minimizing the interference with home-scenario knowledge retention.
+2.2.2 Training Process
+In the RL stage, we employ Group Relative Policy Optimization (GRPO), an algorithm that eliminates
+the need for a separate critic model by leveraging group-based advantage estimation.
+Group Relative Policy Optimization (GRPO).For each query q, GRPO samples a group of
+outputs{o 1, o2, . . . , oG}from the current policyπ θ. The optimization objective is formulated as:
+JGRPO(θ) =Eq∼P(Q),{o i}G
+i=1∼πθold
+"
+1
+G
+GX
+i=1
+ 
+min
+ πθ(oi|q)
+πθold(oi|q)
+ˆAi,
+clip
+ πθ(oi|q)
+πθold(oi|q) ,1−ϵ,1 +ϵ
+
+ˆAi
+
+−βD KL(πθ||πref)
+!# (1)
+where ϵ and β are hyperparameters controlling the clipping range and the KL-divergence penalty,
+respectively. The advantage ˆAi for each output is computed by normalizing the rewards within the
+group, thereby using the group average as a baseline:
+ˆAi = ri −mean({r 1, . . . , rG})
+std({r1, . . . , rG}) (2)
+where ri is the reward for outputoi. This approach reduces memory overhead and training complexity
+compared to standard PPO with a value network.
+Reward Modeling.To guide the model across diverse tasks, we design specific reward functions.
+For all tasks, the total reward r is a weighted sum of an accuracy-based reward racc and a format-
+compliance rewardr fmt, defined as:
+r=λ acc ·r acc(y, y∗) +λfmt ·r fmt(y)(3)
+where y is the predicted output, y∗ is the ground truth, and we set λacc = 0.9and λf mt= 0.1. The
+format reward rfmt(y) is a binary value indicating whether the output adheres to the required structure
+(e.g., enclosing the answer in specific tokens). The task-specific accuracy rewards are defined as
+follows:
+1. Temporal Grounding Reward.For video temporal grounding, we evaluate the overlap between
+the predicted time segment Tpred = [tpred
+start, tpred
+end ] and the ground truth segment Tgt = [tgt
+start, tgt
+end]. The
+accuracy reward is calculated using the Intersection over Union (IoU) of the 1D time intervals:
+rtemp
+acc = max(0,min(t pred
+end , tgt
+end)−max(t pred
+start, tgt
+start))
+(tpred
+end −t pred
+start) + (tgt
+end −t gt
+start)−max(0,min(t pred
+end , tgt
+end)−max(t pred
+start, tgt
+start))
+.(4)
+5
+
+2. GUI Grounding Reward.For GUI tasks, the model predicts a bounding box Bpred. The reward is
+determined by the 2D IoU between the predicted box and the ground truth boxB gt:
+rgui
+acc = Area(Bpred ∩B gt)
+Area(Bpred ∪B gt) (5)
+where Area(A∩B),Area(A∪B) are the intersection and union between boxesA and B, respectively.
+3. Mathematical Reasoning Reward.For mathematical and reasoning tasks, we employ an exact-
+match criterion based on the final answer extracted from the model’s chain of thought. The accuracy
+reward is a binary indicator function:
+rmath
+acc =I[y=y ∗](6)
+whereI[·]is 1 if the extracted answer matches the ground truth and 0 otherwise.
+By post-training through GRPO, MiMo-VL-Miloco regains its general capabilities in video, GUI,
+and reasoning tasks while retaining the specialized knowledge acquired during the SFT stage.
+3 Experiments
+We evaluate the model on both home-scenario benchmarks and general-purpose benchmarks. The
+home-scenario benchmarks assess the model’s ability to recognize common daily activities and
+fine-grained hand gestures, directly reflecting its applicability to smart-home scenarios. In addition,
+we evaluate the model on 20 general-purpose benchmarks spanning a broad range of capabilities,
+including visual perception, video understanding, GUI grounding, text comprehension, reasoning, and
+OCR. These evaluations provide a comprehensive assessment of MiMo-VL-Miloco-7B, capturing
+both its domain-specific strengths and its generalization performance.
+3.1 Evaluation Settings
+For image comprehension tasks, we adopt a dynamic resolution strategy, representing each input
+image with up to 4,096 patches of 28×28 pixels and a maximum generation budget of 32,768 tokens.
+To ensure reproducibility, greedy search is used for standard visual question answering tasks. For
+video benchmarks, frames are sampled at 2 FPS, with a maximum of 256 frames per input and a
+total context limit of 16,384 tokens. For open-ended text generation and reasoning tasks, we set
+the maximum number of new tokens to 32,768 and use a sampling strategy with temperature 0.6
+and top-p 0.95. We extend the LMMs-Eval framework [ 45] to better support models capable of
+long-chain-of-thought (CoT) reasoning and refine task-specific evaluation logic to ensure metric
+consistency across all benchmarks.
+3.2 Home-Scenario Understanding Capabilities
+Table 1 reports per-category F1-scores for home-scenario activity classification and gesture recog-
+nition. Overall, MiMo-VL-Miloco-7B achieves state-of-the-art performance across all categories,
+substantially outperforming both open-source baselines such as Qwen2.5-VL-7B [3], MiMo-VL-7B-
+SFT-2508 [38] and the proprietary Gemini-2.5-Pro [7].
+For common daily activities, MiMo-VL-Miloco-7B attains F1-scores of 98.3, 90.8, 90.5, 99.2, and
+96.7 on Watch TV , Reading, Play on the Phone, Play Esports, and Workout, respectively, improving
+upon the strongest baselines by 2-4 percentage points in each case.
+In gesture recognition, the model demonstrates high precision, achieving F1-scores of 86.3 (OK),
+90.5 (Thumbs Up), 90.3 (V Sign), 88.3 (Shaka Sign), and 87.5 (Open Palm). The improvements are
+particularly notable for complex gestures. For example, on the Shaka Sign, MiMo-VL-Miloco-7B
+surpasses the best baseline by over +18 F1 points. These results confirm that our home-centric
+training strategy, combining high-quality proprietary data with chain-of-thought supervision, enables
+superior perception of daily activities and fine-grained gestures in realistic home environments.
+3.3 General Capabilities
+Table 2 presents the evaluation of MiMo-VL-Miloco-7B on general multimodal benchmarks, com-
+pared with leading open-source vision-language models. Overall, the model demonstrates strong
+6
+
+Benchmark Metrics Qwen2.5-VL
+7B
+Gemini-
+2.5-Pro
+MiMo-VL
+7B-SFT-2508
+MiMo-VL-
+Miloco-7B
+Daily Activity
+Watch TV F1-score 81.2 93.8 86.0 98.3
+Reading F1-score 78.7 88.9 81.7 90.8
+Play on the phone F1-score 88.4 81.9 75.3 90.5
+Play Esports F1-score 95.2 95.9 95.2 99.2
+Workout F1-score 88.9 91.9 93.7 96.7
+Gesture
+OK F1-score 73.8 81.8 75.6 86.3
+Thumbs Up F1-score 78.6 86.9 77.1 90.5
+V Sign F1-score 67.0 86.7 86.5 90.3
+Shaka Sign F1-score 33.3 70.1 67.4 88.3
+Open Palm F1-score 53.4 87.4 79.8 87.5
+Table 1: Per-category F1-score comparison for home-scenario activity and hand gesture recognition.
+We benchmark MiMo-VL-Miloco-7B against leading baselines, including Qwen2.5-VL-7B [ 3],
+Gemini-2.5-Pro [7], and MiMo-VL-7B-SFT-2508 [38]. MiMo-VL-Miloco-7B consistently achieves
+the highest F1-scores across all categories, demonstrating superior capabilities in understanding daily
+activities and fine-grained gestures within home environments.
+performance across image, video, GUI, and reasoning tasks. While the base model, MiMo-VL-7B-
+SFT-2508, maintains a slight edge in specialized document understanding and OCR tasks, MiMo-VL-
+Miloco-7B effectively balances home-scenario specialization with general competence. The specific
+findings are as follows:
+Image Understanding.MiMo-VL-Miloco-7B achieves 55.7% and 47.2% accuracy on MMMU-
+Prostandard and MMMU-Provision [42], respectively, outperforming larger models such as Gemma-
+3-27B-IT [33] and InternVL3-8B [ 48] by significant margins. It also secures the top score on
+MME-RealWorlden (59.9%) while remaining highly competitive on MME-RealWorldcn [46].
+Video Understanding.Reflecting the benefits of our RL stage, the model sets new state-of-the-art
+scores among compared models with 63.6% on Video-MMMU [17] and 46.6% on Charades-STA [13].
+Notably, it shows improvement on Video-MME [12] compared to the SFT baseline.
+Document and OCR.MiMo-VL-Miloco-7B leads the open-source comparisons with 92.0% on
+ChartQA [24] and 95.2% on DocVQA [25]. Although it trails slightly behind the base MiMo-VL-7B-
+SFT-2508, it significantly outperforms other open-source large models, indicating that the trade-off
+for home specialization is minimal.
+GUI Grounding.The model achieves new record highs in GUI agents tasks, recording 89.8%, 92.1%,
+and 37.8% CenterAcc on ScreenSpot [6], ScreenSpot-v2 [6], and ScreenSpot-Pro [6], respectively.
+Text and Reasoning.In text-only reasoning, MiMo-VL-Miloco-7B achieves an Exact Match (EM)
+score of 68.5 on MMLU-Pro [36], significantly surpassing other open-source models. Furthermore, it
+attains 95.2 Pass@1 on MATH500 [16] and 55.1 Pass@1 on GPQA-Diamond [28], performing on
+par with the best results from the MiMo-VL family. These results demonstrate that our home-centric
+specialization preserves, and in some cases enhances, general language and reasoning capabilities
+through the GRPO-based refinement.
+In summary, compared with mainstream open-source models, MiMo-VL-Miloco-7B demonstrates
+clear advantages in video understanding, GUI grounding, and multimodal reasoning while maintaining
+competitive performance in text reasoning tasks. The minor regression in document-centric tasks is
+expected due to home-scenario prioritization, but the model remains robust for practical deployment.
+Future work will focus on bridging this gap through multi-objective optimization.
+4 Conclusions
+In this work, we presentMiMo-VL-Miloco-7B, demonstrating that targeted home-centric tuning
+can effectively coexist with broad multimodal competence. By integrating enhanced supervised
+7
+
+Benchmark Metrics Gemma-3
+27B-IT
+Qwen2.5-VL
+7B
+InternVL3
+8B
+MiMo-VL
+7B-SFT-2508
+MiMo-VL-
+Miloco-7B
+General
+MMMU-Prostandard Acc. 37.8 34.7 45.6 43.0 55.7
+MMMU-Provision Acc. 24.9 29.4 37.8 36.4 47.2
+MMMU†
+val Acc. 64.9 58.6 62.768.7 66.4
+MME Score - - -2473.6 ‡ 2396.4‡
+MME-RealWorlden Acc. 51.9 57.4 56.1 59.7 ∗ 59.9∗
+MME-RealWorldcn Acc. 47.9 51.2 58.564.3 ∗ 61.4∗
+Video
+Video-MME Acc. - 65.1 66.3 67.8 68.0
+Video-MMMU Acc. - 47.4 48.9 57.6 63.6
+Charades-STA Acc. - 43.6 25.4 44.3 46.6
+Doc & OCR
+ChartQA† Acc. 78.0 90.2 89.693.2 92.0
+DocVQA† Acc. 86.6 95.5 89.495.5 95.2
+OCRBench† Acc. 77.689.788.0 87.8 86.5
+GUI
+ScreenSpot CenterAcc. - 84.7 79.5 89.5 89.8
+ScreenSpot-v2 CenterAcc. - 88.0 81.4 92.0 92.1
+ScreenSpot-Pro CenterAcc. - 29.0 - 37.3 37.8
+Reasoning
+OlympiadBench Acc. - - -57.9 57.9
+MathVision Acc. - - -57.2 54.0
+Text
+MMLU-Pro EM 45.3 48.7 58.3 67.1 68.5
+GPQADiamond Pass@1 40.9 30.3 33.555.9 55.1
+MATH500 Pass@1 29.3 25.4 29.496.8 95.2
+Table 2: Performance comparison on general-purpose multimodal benchmarks. We evaluate MiMo-
+VL-Miloco-7B against leading open-source baselines, including Gemma-3-27B-IT [33], Qwen2.5-
+VL-7B [3], InternVL3-8B [48], and the base model MiMo-VL-7B-SFT-2508 [38]. The assessment
+encompasses a diverse range of domains: general vision-language tasks, video understanding,
+document/OCR, GUI grounding, and text-based reasoning. †: Evaluated using GPT-4o as the judge.
+∗: Results obtained without explicit chain-of-thought reasoning. ‡: Results reproduced using our
+evaluation pipeline. The best performance among open-source models is highlighted inbold.
+fine-tuning with GRPO-based reinforcement learning utilizing the difficulty-aware data construction
+strategy, the model acquires rich priors regarding household activities and gestures while preserving
+robust performance on generic video, GUI, text, and reasoning benchmarks. Extensive evaluations
+confirm substantial F1 gains on internal home-scenario suites and competitive results across public
+multimodal leaderboards, with only modest trade-offs on document-centric tasks. Through the joint
+release of full-precision and quantized GGUF checkpoints and integration with the framework of
+Xiaomi Miloco , we provide a reproducible foundation for privacy-preserving, on-device multimodal
+agents capable of perceiving, reasoning, and acting alongside users in real-world smart homes.
+As future work, we will further capitalize on Xiaomi’s hardware ecosystem to incorporate a broader
+range of sensing modalities, including audio and millimeter-wave signals, into a unified multimodal
+learning framework. By jointly reasoning over heterogeneous sensory inputs, we aim to advance
+toward holistic household scene understanding and fine-grained spatial perception. Meanwhile, we
+will continue to investigate model compression and architectural optimization to achieve smaller
+model footprints and more efficient inference, facilitating scalable and practical on-device deployment
+in real-world smart home scenarios.
+8
+
+References
+[1] Triantafyllos Afouras, Effrosyni Mavroudi, Tushar Nagarajan, Huiyu Wang, and Lorenzo
+Torresani. Ht-step: Aligning instructional articles with how-to videos.Advances in Neural
+Information Processing Systems, 36:50310–50326, 2023.
+[2] Jean-Baptiste Alayrac, Jeff Donahue, Pauline Luc, Antoine Miech, Iain Barr, Yana Hasson,
+Karel Lenc, Arthur Mensch, Katherine Millican, Malcolm Reynolds, et al. Flamingo: a visual
+language model for few-shot learning.Advances in neural information processing systems, 35:
+23716–23736, 2022.
+[3] Shuai Bai, Keqin Chen, Xuejing Liu, Jialin Wang, Wenbin Ge, Sibo Song, Kai Dang, Peng Wang,
+Shijie Wang, Jun Tang, et al. Qwen2.5-vl technical report.arXiv preprint arXiv:2502.13923,
+2025.
+[4] Damien Bouchabou, Sao Mai Nguyen, Christophe Lohr, Benoit LeDuc, and Ioannis Kanel-
+los. A survey of human activity recognition in smart homes based on iot sensors algorithms:
+Taxonomies, challenges, and opportunities with deep learning.Sensors, 21(18):6037, 2021.
+[5] Xusheng Cao, Haori Lu, Linlan Huang, Xialei Liu, and Ming-Ming Cheng. Generative multi-
+modal models are good class incremental learners. InProceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, pages 28706–28717, 2024.
+[6] Kanzhi Cheng, Qiushi Sun, Yougang Chu, Fangzhi Xu, Li YanTao, Jianbing Zhang, and Zhiyong
+Wu. Seeclick: Harnessing gui grounding for advanced visual gui agents. InProceedings of
+the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long
+Papers), pages 9313–9332, 2024.
+[7] Gheorghe Comanici, Eric Bieber, Mike Schaekermann, Ice Pasupat, Noveen Sachdeva, Inderjit
+Dhillon, et al. Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long
+context, and next generation agentic capabilities.arXiv preprint arXiv:2507.06261, 2025.
+[8] Wenliang Dai, Junnan Li, Dongxu Li, Anthony Tiong, Junqi Zhao, Weisheng Wang, Boyang Li,
+Pascale N Fung, and Steven Hoi. Instructblip: Towards general-purpose vision-language models
+with instruction tuning.Advances in neural information processing systems, 36:49250–49267,
+2023.
+[9] Sauptik Dhar, Junyao Guo, Jiayi Liu, Samarth Tripathi, Unmesh Kurup, and Mohak Shah. A
+survey of on-device machine learning: An algorithms and learning theory perspective.ACM
+Transactions on Internet of Things, 2(3):1–49, 2021.
+[10] Giovanni Diraco, Gabriele Rescio, Andrea Caroppo, Andrea Manni, and Alessandro Leone.
+Human action recognition in smart living services and applications: context awareness, data
+availability, personalization, and privacy.Sensors, 23(13):6040, 2023.
+[11] Xinyu Fang, Kangrui Mao, Haodong Duan, Xiangyu Zhao, Yining Li, Dahua Lin, and Kai
+Chen. Mmbench-video: A long-form multi-shot benchmark for holistic video understanding.
+Advances in Neural Information Processing Systems, 37:89098–89124, 2024.
+[12] Chaoyou Fu, Yuhan Dai, Yongdong Luo, Lei Li, Shuhuai Ren, Renrui Zhang, Zihan Wang,
+Chenyu Zhou, Yunhang Shen, Mengdan Zhang, et al. Video-mme: The first-ever comprehensive
+evaluation benchmark of multi-modal llms in video analysis. InProceedings of the Computer
+Vision and Pattern Recognition Conference, pages 24108–24118, 2025.
+[13] Jiyang Gao, Chen Sun, Zhenheng Yang, and Ram Nevatia. Tall: Temporal activity localization
+via language query. InProceedings of the IEEE International Conference on Computer Vision
+(ICCV), Oct 2017.
+[14] Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu,
+Shirong Ma, Peiyi Wang, Xiao Bi, et al. Deepseek-r1: Incentivizing reasoning capability in
+llms via reinforcement learning.arXiv preprint arXiv:2501.12948, 2025.
+9
+
+[15] Yongxin Guo, Jingyu Liu, Mingda Li, Dingxin Cheng, Xiaoying Tang, Dianbo Sui, Qingbin
+Liu, Xi Chen, and Kevin Zhao. Vtg-llm: Integrating timestamp knowledge into video llms
+for enhanced video temporal grounding. InProceedings of the AAAI Conference on Artificial
+Intelligence, volume 39, pages 3302–3310, 2025.
+[16] Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn
+Song, and Jacob Steinhardt. Measuring mathematical problem solving with the math dataset.
+arXiv preprint arXiv:2103.03874, 2021.
+[17] Kairui Hu, Penghao Wu, Fanyi Pu, Wang Xiao, Yuanhan Zhang, Xiang Yue, Bo Li, and Ziwei
+Liu. Video-mmmu: Evaluating knowledge acquisition from multi-discipline professional videos.
+arXiv preprint arXiv:2501.13826, 2025.
+[18] Diederik P Kingma. Adam: A method for stochastic optimization.arXiv preprint
+arXiv:1412.6980, 2014.
+[19] Jiaze Li, Yaya Shi, Zongyang Ma, Haoran Xu, Huihui Xiao, Ruiwen Kang, Fan Yang, Tingting
+Gao, Di Zhang, et al. imove: Instance-motion-aware video understanding. InFindings of the
+Association for Computational Linguistics: ACL 2025, pages 23959–23975, 2025.
+[20] Jiaze Li, Hao Yin, Wenhui Tan, Jingyang Chen, Boshen Xu, Yuxun Qu, Yijing Chen, Jianzhong
+Ju, Zhenbo Luo, and Jian Luan. Revisor: Beyond textual reflection, towards multimodal
+introspective reasoning in long-form video understanding.arXiv preprint arXiv:2511.13026,
+2025.
+[21] Junnan Li, Dongxu Li, Silvio Savarese, and Steven Hoi. Blip-2: Bootstrapping language-image
+pre-training with frozen image encoders and large language models. InInternational conference
+on machine learning, pages 19730–19742. PMLR, 2023.
+[22] Xinhao Li, Yi Wang, Jiashuo Yu, Xiangyu Zeng, Yuhan Zhu, Haian Huang, Jianfei Gao,
+Kunchang Li, Yinan He, Chenting Wang, et al. Videochat-flash: Hierarchical compression for
+long-context video modeling.arXiv preprint arXiv:2501.00574, 2024.
+[23] Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee. Visual instruction tuning.Advances
+in neural information processing systems, 36:34892–34916, 2023.
+[24] Ahmed Masry, Xuan Long Do, Jia Qing Tan, Shafiq Joty, and Enamul Hoque. Chartqa: A
+benchmark for question answering about charts with visual and logical reasoning. InFindings
+of the association for computational linguistics: ACL 2022, pages 2263–2279, 2022.
+[25] Minesh Mathew, Dimosthenis Karatzas, and CV Jawahar. Docvqa: A dataset for vqa on
+document images. InProceedings of the IEEE/CVF winter conference on applications of
+computer vision, pages 2200–2209, 2021.
+[26] Charith Perera, Arkady Zaslavsky, Peter Christen, and Dimitrios Georgakopoulos. Context
+aware computing for the internet of things: A survey.IEEE communications surveys & tutorials,
+16(1):414–454, 2013.
+[27] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal,
+Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, et al. Learning transferable visual
+models from natural language supervision. InInternational conference on machine learning,
+pages 8748–8763. PmLR, 2021.
+[28] David Rein, Betty Li Hou, Asa Cooper Stickland, Jackson Petty, Richard Yuanzhe Pang, Julien
+Dirani, Julian Michael, and Samuel R Bowman. Gpqa: A graduate-level google-proof q&a
+benchmark. InFirst Conference on Language Modeling, 2024.
+[29] Shuhuai Ren, Linli Yao, Shicheng Li, Xu Sun, and Lu Hou. Timechat: A time-sensitive
+multimodal large language model for long video understanding. InProceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, pages 14313–14323, 2024.
+[30] Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Xiao Bi, Haowei Zhang,
+Mingchuan Zhang, YK Li, Yang Wu, et al. Deepseekmath: Pushing the limits of mathematical
+reasoning in open language models.arXiv preprint arXiv:2402.03300, 2024.
+10
+
+[31] Yi Su, Dian Yu, Linfeng Song, Juntao Li, Haitao Mi, Zhaopeng Tu, Min Zhang, and Dong Yu.
+Crossing the reward bridge: Expanding rl with verifiable rewards across diverse domains.arXiv
+preprint arXiv:2503.23829, 2025.
+[32] Chellammal Surianarayanan, John Jeyasekaran Lawrence, Pethuru Raj Chelliah, Edmond
+Prakash, and Chaminda Hewage. A survey on optimization techniques for edge artificial
+intelligence (ai).Sensors, 23(3):1279, 2023.
+[33] Gemma Team, Aishwarya Kamath, Johan Ferret, Shreya Pathak, Nino Vieillard, Ramona
+Merhej, Sarah Perrin, Tatiana Matejovicova, Alexandre Ramé, Morgane Rivière, et al. Gemma
+3 technical report.arXiv preprint arXiv:2503.19786, 2025.
+[34] Blase Ur, Melwyn Pak Yong Ho, Stephen Brawner, Jiyun Lee, Sarah Mennicken, Noah Picard,
+Diane Schulze, and Michael L Littman. Trigger-action programming in the wild: An analysis
+of 200,000 ifttt recipes. InProceedings of the 2016 CHI Conference on Human Factors in
+Computing Systems, pages 3227–3231, 2016.
+[35] Ye Wang, Ziheng Wang, Boshen Xu, Yang Du, Kejun Lin, Zihan Xiao, Zihao Yue, Jianzhong
+Ju, Liang Zhang, Dingyi Yang, Xiangnan Fang, Zewen He, Zhenbo Luo, Wenxuan Wang, Junqi
+Lin, Jian Luan, and Qin Jin. Time-r1: Post-training large vision language model for temporal
+video grounding.arXiv preprint arXiv:2503.13377, 2025.
+[36] Yubo Wang, Xueguang Ma, Ge Zhang, Yuansheng Ni, Abhranil Chandra, Shiguang Guo,
+Weiming Ren, Aaran Arulraj, Xuan He, Ziyan Jiang, et al. Mmlu-pro: A more robust and
+challenging multi-task language understanding benchmark.Advances in Neural Information
+Processing Systems, 37:95266–95290, 2024.
+[37] Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le,
+Denny Zhou, et al. Chain-of-thought prompting elicits reasoning in large language models.
+Advances in neural information processing systems, 35:24824–24837, 2022.
+[38] LCT Xiaomi and Core Team. Mimo-vl technical report.arXiv preprint arXiv:2506.03569, 1(2):
+5, 2025.
+[39] Shukang Yin, Chaoyou Fu, Sirui Zhao, Ke Li, Xing Sun, Tong Xu, and Enhong Chen. A survey
+on multimodal large language models.National Science Review, 11(12):nwae403, 2024.
+[40] Jiyeon Yu, Angelica De Antonio, and Elena Villalba-Mora. Deep learning (cnn, rnn) applications
+for smart homes: a systematic review.Computers, 11(2):26, 2022.
+[41] Xiang Yue, Yuansheng Ni, Kai Zhang, Tianyu Zheng, Ruoqi Liu, Ge Zhang, Samuel Stevens,
+Dongfu Jiang, Weiming Ren, Yuxuan Sun, et al. Mmmu: A massive multi-discipline multimodal
+understanding and reasoning benchmark for expert agi. InProceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, pages 9556–9567, 2024.
+[42] Xiang Yue, Tianyu Zheng, Yuansheng Ni, Yubo Wang, Kai Zhang, Shengbang Tong, Yuxuan
+Sun, Botao Yu, Ge Zhang, Huan Sun, et al. Mmmu-pro: A more robust multi-discipline
+multimodal understanding benchmark. InProceedings of the 63rd Annual Meeting of the
+Association for Computational Linguistics (Volume 1: Long Papers), pages 15134–15186, 2025.
+[43] Xiangyu Zeng, Kunchang Li, Chenting Wang, Xinhao Li, Tianxiang Jiang, Ziang Yan, Songze
+Li, Yansong Shi, Zhengrong Yue, Yi Wang, et al. Timesuite: Improving mllms for long video un-
+derstanding via grounded tuning, 2024, abs/2410.19702.URL https://arxiv. org/abs/2410.19702.
+[44] Yuanhao Zeng, Min Wang, Yihang Wang, and Yingxia Shao. Token-efficient leverage learning
+in large language models.arXiv preprint arXiv:2404.00914, 2024.
+[45] Kaichen Zhang, Bo Li, Peiyuan Zhang, Fanyi Pu, Joshua Adrian Cahyono, Kairui Hu, Shuai
+Liu, Yuanhan Zhang, Jingkang Yang, Chunyuan Li, and Ziwei Liu. Lmms-eval: Reality check
+on the evaluation of large multimodal models. InFindings of the Association for Computational
+Linguistics: NAACL 2025, pages 881–916, 2025.
+11
+
+[46] Yi-Fan Zhang, Huanyu Zhang, Haochen Tian, Chaoyou Fu, Shuangqing Zhang, Junfei Wu, Feng
+Li, Kun Wang, Qingsong Wen, Zhang Zhang, et al. Mme-realworld: Could your multimodal
+llm challenge high-resolution real-world scenarios that are difficult for humans?arXiv preprint
+arXiv:2408.13257, 2024.
+[47] Yue Zheng, Yuhao Chen, Bin Qian, Xiufang Shi, Yuanchao Shu, and Jiming Chen. A review on
+edge large language models: Design, execution, and applications.ACM Computing Surveys, 57
+(8):1–35, 2025.
+[48] Jinguo Zhu, Weiyun Wang, Zhe Chen, Zhaoyang Liu, Shenglong Ye, Lixin Gu, Hao Tian,
+Yuchen Duan, Weijie Su, Jie Shao, et al. Internvl3: Exploring advanced training and test-time
+recipes for open-source multimodal models.arXiv preprint arXiv:2504.10479, 2025.
+A Contributions and Acknowledgments
+We express our sincere gratitude to all contributors for their dedication to the design, implementation,
+experimentation, and documentation of this project. Their collaborative efforts across data curation,
+model training, system integration, and empirical evaluation were instrumental to the success of this
+work and the release of the accompanying codebase. We extend special thanks to the Xiaomi LLM-
+Core and CloudML teams for their invaluable support in dataset construction, training infrastructure,
+and evaluation protocols. The contributors to this work are listed as follows:
+Core Contributors
+Jiaze Li
+Jingyang Chen
+Yuxun Qu
+Jianzhong Ju
+Zhenbo Luo
+Jian Luan
+Contributors
+Shijie Xu
+Zhenru Lin
+Junyou Zhu
+Boshen Xu
+Wenhui Tan
+Pei Fu
+12

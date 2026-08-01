@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A" />
+    <stop offset="100%" stop-color="#1565C0" />
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18" />
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0" />
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC" />
+
+
+<rect x="0" y="0" width="1280" height="720" fill="#EAF2F8" fill-opacity="0.45" />
+<circle cx="1060" cy="140" r="190" fill="#EAF2F8" />
+<circle cx="1040" cy="150" r="120" fill="#22C1C3" fill-opacity="0.18" />
+<circle cx="220" cy="610" r="150" fill="#1565C0" fill-opacity="0.08" />
+<circle cx="640" cy="150" r="54" fill="#EAF2F8" stroke="#1565C0" stroke-width="2" />
+
+  <g transform="translate(604.0, 114.0) scale(0.28125)" fill="#1565C0">
+    <path d="M200,56H56A24,24,0,0,0,32,80V192a24,24,0,0,0,24,24H200a24,24,0,0,0,24-24V80A24,24,0,0,0,200,56ZM164,184H92a20,20,0,0,1,0-40h72a20,20,0,0,1,0,40Z" opacity="0.2" />
+    <path d="M200,48H136V16a8,8,0,0,0-16,0V48H56A32,32,0,0,0,24,80V192a32,32,0,0,0,32,32H200a32,32,0,0,0,32-32V80A32,32,0,0,0,200,48Zm16,144a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V80A16,16,0,0,1,56,64H200a16,16,0,0,1,16,16Zm-52-56H92a28,28,0,0,0,0,56h72a28,28,0,0,0,0-56Zm-28,16v24H120V152ZM80,164a12,12,0,0,1,12-12h12v24H92A12,12,0,0,1,80,164Zm84,12H152V152h12a12,12,0,0,1,0,24ZM72,108a12,12,0,1,1,12,12A12,12,0,0,1,72,108Zm88,0a12,12,0,1,1,12,12A12,12,0,0,1,160,108Z" />
+  </g>
+<text text-anchor="middle" font-size="44" fill="#0B1F3A" font-weight="bold" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="640" y="285">中小型大模型在多智能体系统中的</text><text text-anchor="middle" font-size="44" fill="#0B1F3A" font-weight="bold" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="640" y="347">作用与发展前景综述</text><path fill="#0B1F3A" d="M342,430 H938 A2,2 0 0 1 940,432 V432 A2,2 0 0 1 938,434 H342 A2,2 0 0 1 340,432 V432 A2,2 0 0 1 342,430 Z" />
+<text x="640" y="488" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" fill="#64748B">低成本、可部署、可角色化的基础执行层</text>
+<path fill="#EAF2F8" stroke="#CBD5E1" d="M385,552 H497 A19,19 0 0 1 516,571 V571 A19,19 0 0 1 497,590 H385 A19,19 0 0 1 366,571 V571 A19,19 0 0 1 385,552 Z" /><text x="441" y="577" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#1565C0">LLM-MAS</text>
+<path fill="#EAF2F8" stroke="#CBD5E1" d="M561,552 H673 A19,19 0 0 1 692,571 V571 A19,19 0 0 1 673,590 H561 A19,19 0 0 1 542,571 V571 A19,19 0 0 1 561,552 Z" /><text x="617" y="577" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#1565C0">模型路由</text>
+<path fill="#EAF2F8" stroke="#CBD5E1" d="M737,552 H895 A19,19 0 0 1 914,571 V571 A19,19 0 0 1 895,590 H737 A19,19 0 0 1 718,571 V571 A19,19 0 0 1 737,552 Z" /><text x="816" y="577" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#1565C0">安全治理</text>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8" />
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">01 / 10</text>
+
+</svg>

@@ -1,0 +1,22 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A"/>
+    <stop offset="100%" stop-color="#1565C0"/>
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0"/>
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC"/>
+
+<text x="56" y="68" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0B1F3A">多智能体系统不是多个聊天框，而是复合系统</text>
+<rect x="56" y="92" width="1168" height="48" rx="12" fill="#EAF2F8"/>
+<text x="80" y="123" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">中小型大模型的价值，要放在“角色—能力—编排—治理”的分层结构中理解。</text>
+<rect x="150" y="174" width="980" height="88" rx="14" fill="#0B1F3A"/><use data-icon="phosphor-duotone/shield-check" x="178" y="196" width="44" height="44" fill="#22C1C3"/><text x="246" y="210" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#FFFFFF">治理层</text><text x="246" y="240" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#FFFFFF">权限控制、日志审计、风险分级、人工复核</text><rect x="150" y="286" width="980" height="88" rx="14" fill="#EAF2F8" stroke="#CBD5E1"/><use data-icon="phosphor-duotone/flow-arrow" x="178" y="308" width="44" height="44" fill="#1565C0"/><text x="246" y="322" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">编排层</text><text x="246" y="352" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">任务分解、状态管理、工具调用、失败恢复、模型升级</text><rect x="150" y="398" width="980" height="88" rx="14" fill="#FFFFFF" stroke="#CBD5E1"/><use data-icon="phosphor-duotone/database" x="178" y="420" width="44" height="44" fill="#1565C0"/><text x="246" y="434" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">能力层</text><text x="246" y="464" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">模型能力、记忆、RAG 知识库、代码执行器、业务 API</text><rect x="150" y="510" width="980" height="88" rx="14" fill="#FFFFFF" stroke="#CBD5E1"/><use data-icon="phosphor-duotone/robot" x="178" y="532" width="44" height="44" fill="#1565C0"/><text x="246" y="546" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">角色层</text><text x="246" y="576" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">规划者、研究员、执行者、评审者、安全检查员</text>
+<use data-icon="phosphor-duotone/tree-structure" x="1120" y="300" width="76" height="76" fill="#22C1C3"/>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">Visualization: layered architecture</text>
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">03 / 10</text>
+</svg>

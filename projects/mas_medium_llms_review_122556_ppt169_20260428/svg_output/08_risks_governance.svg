@@ -1,0 +1,24 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A"/>
+    <stop offset="100%" stop-color="#1565C0"/>
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0"/>
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC"/>
+
+<text x="56" y="68" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0B1F3A">多智能体不天然更可靠：错误可能被放大</text>
+
+<rect x="56" y="96" width="1168" height="70" rx="16" fill="#D97706" fill-opacity="0.12" stroke="#D97706"/><use data-icon="phosphor-duotone/warning-circle" x="82" y="111" width="40" height="40" fill="#D97706"/>
+<text x="140" y="139" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#D97706">多智能体系统会把单模型风险扩展为流程风险、权限风险和协作风险。</text>
+<rect x="70" y="210" width="540" height="330" rx="18" fill="#FFFFFF" stroke="#CBD5E1"/><text x="102" y="252" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">主要挑战</text><text x="102" y="306" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="102" dy="0">1. 能力上限：复杂推理、长上下文、高风险决策</tspan><tspan x="102" dy="42">2. 协作可靠性：级联幻觉、群体思维、责任模糊</tspan><tspan x="102" dy="42">3. 工具风险：错误参数、接口失败、越权调用</tspan><tspan x="102" dy="42">4. 评价不足：不能只看单模型 benchmark</tspan></text>
+<rect x="670" y="210" width="540" height="330" rx="18" fill="#EAF2F8" stroke="#CBD5E1"/><text x="702" y="252" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">治理抓手</text><text x="702" y="306" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="702" dy="0">1. 任务难度分级与模型升级</tspan><tspan x="702" dy="42">2. 中间产物校验与日志回放</tspan><tspan x="702" dy="42">3. 权限最小化、沙箱执行、人工确认</tspan><tspan x="702" dy="42">4. 端到端成功率、成本和安全性评估</tspan></text><use data-icon="phosphor-duotone/shield-check" x="1120" y="450" width="54" height="54" fill="#1565C0"/>
+<text x="640" y="610" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#1565C0">结论：中小模型能降低执行成本，但可靠性来自系统级治理，而非模型大小本身。</text>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8"></text>
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">08 / 10</text>
+</svg>

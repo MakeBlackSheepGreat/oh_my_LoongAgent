@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A" />
+    <stop offset="100%" stop-color="#1565C0" />
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18" />
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0" />
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC" />
+
+<text x="56" y="68" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0B1F3A">四类核心作用：成本、角色、部署、治理</text>
+<path fill="#EAF2F8" d="M68,92 H1212 A12,12 0 0 1 1224,104 V128 A12,12 0 0 1 1212,140 H68 A12,12 0 0 1 56,128 V104 A12,12 0 0 1 68,92 Z" />
+<text x="80" y="123" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">中小模型最适合“高频、明确、可编排、可治理”的节点，而不是所有复杂任务。</text>
+<g id="card-成本与时延优化">
+  <path fill="#FFFFFF" stroke="#CBD5E1" d="M86,180 H594 A16,16 0 0 1 610,196 V344 A16,16 0 0 1 594,360 H86 A16,16 0 0 1 70,344 V196 A16,16 0 0 1 86,180 Z" />
+  
+  <g transform="translate(98.0, 208.0) scale(0.1796875)" fill="#1565C0">
+    <path d="M224,56V208H32V48H216A8,8,0,0,1,224,56Z" opacity="0.2" />
+    <path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0V156.69l50.34-50.35a8,8,0,0,1,11.32,0L128,132.69,180.69,80H160a8,8,0,0,1,0-16h40a8,8,0,0,1,8,8v40a8,8,0,0,1-16,0V91.31l-58.34,58.35a8,8,0,0,1-11.32,0L96,123.31l-56,56V200H224A8,8,0,0,1,232,208Z" />
+  </g>
+  <text x="162" y="235" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">成本与时延优化</text>
+  <text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="98" y="286">承担分类、摘要、检索改写等高频短任务，</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="98" y="316">减少每一步都调用超大模型的必要性。</text></g>
+<g id="card-角色专业化">
+  <path fill="#FFFFFF" stroke="#CBD5E1" d="M686,180 H1194 A16,16 0 0 1 1210,196 V344 A16,16 0 0 1 1194,360 H686 A16,16 0 0 1 670,344 V196 A16,16 0 0 1 686,180 Z" />
+  
+  <g transform="translate(698.0, 208.0) scale(0.1796875)" fill="#1565C0">
+    <path d="M168,144a40,40,0,1,1-40-40A40,40,0,0,1,168,144ZM64,56A32,32,0,1,0,96,88,32,32,0,0,0,64,56Zm128,0a32,32,0,1,0,32,32A32,32,0,0,0,192,56Z" opacity="0.2" />
+    <path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1,0-16,24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.85,8,57,57,0,0,0-98.15,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z" />
+  </g>
+  <text x="762" y="235" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">角色专业化</text>
+  <text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="698" y="286">通过提示模板、微调或蒸馏，固化为检索、</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="698" y="316">审查、工具执行、安全评估等专用角色。</text></g>
+<g id="card-私有化与端边云协同">
+  <path fill="#FFFFFF" stroke="#CBD5E1" d="M86,398 H594 A16,16 0 0 1 610,414 V562 A16,16 0 0 1 594,578 H86 A16,16 0 0 1 70,562 V414 A16,16 0 0 1 86,398 Z" />
+  
+  <g transform="translate(98.0, 426.0) scale(0.1796875)" fill="#1565C0">
+    <path d="M240,128a80,80,0,0,1-80,80H72A56,56,0,1,1,85.92,97.74l0,.1A80,80,0,0,1,240,128Z" opacity="0.2" />
+    <path d="M160,40A88.09,88.09,0,0,0,81.29,88.67,64,64,0,1,0,72,216h88a88,88,0,0,0,0-176Zm0,160H72a48,48,0,0,1,0-96c1.1,0,2.2,0,3.29.11A88,88,0,0,0,72,128a8,8,0,0,0,16,0,72,72,0,1,1,72,72Zm37.66-93.66a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L144,148.69l42.34-42.35A8,8,0,0,1,197.66,106.34Z" />
+  </g>
+  <text x="162" y="453" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">私有化与端边云协同</text>
+  <text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="98" y="504">进入企业私有云、本地服务器、边缘设备，</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="98" y="534">让敏感数据处理更靠近数据源。</text></g>
+<g id="card-安全过滤与评审">
+  <path fill="#FFFFFF" stroke="#CBD5E1" d="M686,398 H1194 A16,16 0 0 1 1210,414 V562 A16,16 0 0 1 1194,578 H686 A16,16 0 0 1 670,562 V414 A16,16 0 0 1 686,398 Z" />
+  
+  <g transform="translate(698.0, 426.0) scale(0.1796875)" fill="#1565C0">
+    <path d="M216,56v58.77c0,84.18-71.31,112.07-85.54,116.8a7.54,7.54,0,0,1-4.92,0C111.31,226.86,40,199,40,114.79V56a8,8,0,0,1,8-8H208A8,8,0,0,1,216,56Z" opacity="0.2" />
+    <path d="M208,40H48A16,16,0,0,0,32,56v58.78c0,89.61,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.78,91-124.39V56A16,16,0,0,0,208,40Zm0,74.79c0,78.42-66.35,104.62-80,109.18-13.53-4.51-80-30.69-80-109.18V56H208ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.68l50.34-50.34a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z" />
+  </g>
+  <text x="762" y="453" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">安全过滤与评审</text>
+  <text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="698" y="504">作为低成本 guardrail，执行敏感信息识别、</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="698" y="534">越权提示拦截和人工审批前初筛。</text></g>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8" />
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">05 / 10</text>
+</svg>

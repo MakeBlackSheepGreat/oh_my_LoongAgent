@@ -1,0 +1,44 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A"/>
+    <stop offset="100%" stop-color="#1565C0"/>
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0"/>
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC"/>
+
+<text x="56" y="68" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0B1F3A">四类核心作用：成本、角色、部署、治理</text>
+<rect x="56" y="92" width="1168" height="48" rx="12" fill="#EAF2F8"/>
+<text x="80" y="123" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">中小模型最适合“高频、明确、可编排、可治理”的节点，而不是所有复杂任务。</text>
+<g id="card-成本与时延优化">
+  <rect x="70" y="180" width="540" height="180" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/chart-line-up" x="98" y="208" width="46" height="46" fill="#1565C0"/>
+  <text x="162" y="235" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">成本与时延优化</text>
+  <text x="98" y="286" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="98" dy="0">承担分类、摘要、检索改写等高频短任务，</tspan><tspan x="98" dy="30">减少每一步都调用超大模型的必要性。</tspan></text>
+</g>
+<g id="card-角色专业化">
+  <rect x="670" y="180" width="540" height="180" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/users-three" x="698" y="208" width="46" height="46" fill="#1565C0"/>
+  <text x="762" y="235" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">角色专业化</text>
+  <text x="698" y="286" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="698" dy="0">通过提示模板、微调或蒸馏，固化为检索、</tspan><tspan x="698" dy="30">审查、工具执行、安全评估等专用角色。</tspan></text>
+</g>
+<g id="card-私有化与端边云协同">
+  <rect x="70" y="398" width="540" height="180" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/cloud-check" x="98" y="426" width="46" height="46" fill="#1565C0"/>
+  <text x="162" y="453" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">私有化与端边云协同</text>
+  <text x="98" y="504" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="98" dy="0">进入企业私有云、本地服务器、边缘设备，</tspan><tspan x="98" dy="30">让敏感数据处理更靠近数据源。</tspan></text>
+</g>
+<g id="card-安全过滤与评审">
+  <rect x="670" y="398" width="540" height="180" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/shield-check" x="698" y="426" width="46" height="46" fill="#1565C0"/>
+  <text x="762" y="453" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">安全过滤与评审</text>
+  <text x="698" y="504" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="698" dy="0">作为低成本 guardrail，执行敏感信息识别、</tspan><tspan x="698" dy="30">越权提示拦截和人工审批前初筛。</tspan></text>
+</g>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8"></text>
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">05 / 10</text>
+</svg>

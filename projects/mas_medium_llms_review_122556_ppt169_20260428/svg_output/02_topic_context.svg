@@ -1,0 +1,55 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A"/>
+    <stop offset="100%" stop-color="#1565C0"/>
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0"/>
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC"/>
+
+
+<rect x="0" y="0" width="1280" height="92" fill="#0B1F3A"/>
+<text x="56" y="60" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#FFFFFF">从单模型问答到多智能体协作</text>
+<text x="56" y="126" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#1F2937">核心判断：系统价值来自角色分工、通信协作、工具调用和治理机制的组合。</text>
+<rect x="56" y="170" width="462" height="430" rx="18" fill="#FFFFFF" stroke="#CBD5E1"/>
+<use data-icon="phosphor-duotone/book-open-text" x="88" y="206" width="48" height="48" fill="#1565C0"/>
+<text x="152" y="226" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">问题背景</text>
+<text x="88" y="292" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="88" dy="0">大模型应用正在从内容生成走向</tspan><tspan x="88" dy="30">目标驱动的任务执行。多智能体</tspan><tspan x="88" dy="30">系统进一步要求多个角色共同完</tspan><tspan x="88" dy="30">成规划、检索、工具调用、评审</tspan><tspan x="88" dy="30">和安全控制。</tspan></text>
+<rect x="88" y="500" width="360" height="58" rx="14" fill="#EAF2F8"/>
+<text x="108" y="536" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#1565C0">关键问题：每个角色都需要超大模型吗？</text>
+<g id="card-协作复杂度上升">
+  <rect x="560" y="170" width="306" height="132" rx="16" fill="#EAF2F8" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/users-three" x="588" y="198" width="46" height="46" fill="#1565C0"/>
+  <text x="652" y="225" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">协作复杂度上升</text>
+  <text x="588" y="276" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="588" dy="0">智能体数量、轮次和状态管理增加</tspan></text>
+</g>
+<g id="card-成本曲线变陡">
+  <rect x="904" y="170" width="306" height="132" rx="16" fill="#EAF2F8" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/chart-line-up" x="932" y="198" width="46" height="46" fill="#1565C0"/>
+  <text x="996" y="225" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">成本曲线变陡</text>
+  <text x="932" y="276" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="932" dy="0">token、工具调用和等待时间叠加</tspan></text>
+</g>
+<g id="card-风险边界扩大">
+  <rect x="560" y="340" width="306" height="132" rx="16" fill="#EAF2F8" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/shield-check" x="588" y="368" width="46" height="46" fill="#1565C0"/>
+  <text x="652" y="395" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">风险边界扩大</text>
+  <text x="588" y="446" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="588" dy="0">越权调用、级联幻觉、数据泄露</tspan></text>
+</g>
+<g id="card-需要分层用模">
+  <rect x="904" y="340" width="306" height="132" rx="16" fill="#EAF2F8" stroke="#CBD5E1"/>
+  <use data-icon="phosphor-duotone/brain" x="932" y="368" width="46" height="46" fill="#1565C0"/>
+  <text x="996" y="395" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">需要分层用模</text>
+  <text x="932" y="446" text-anchor="start" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="regular" fill="#1F2937"><tspan x="932" dy="0">小模型常规执行，大模型仲裁升级</tspan></text>
+</g>
+<rect x="560" y="510" width="650" height="90" rx="18" fill="#0B1F3A"/>
+<text x="590" y="548" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFFFFF">本 PPT 的核心命题</text>
+<text x="590" y="580" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#FFFFFF">中小型大模型是 MAS 的基础执行层，而非超大模型替代品。</text>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">Source: Source paper synthesized by user; PPT Master analysis</text>
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">02 / 10</text>
+
+</svg>

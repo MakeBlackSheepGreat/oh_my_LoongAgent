@@ -1,0 +1,28 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A"/>
+    <stop offset="100%" stop-color="#1565C0"/>
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0"/>
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC"/>
+
+
+<text x="640" y="72" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0B1F3A">中小型大模型是 MAS 的基础执行层</text>
+<text x="640" y="115" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#64748B">不是全面替代超大模型，而是在明确边界内高频、稳定、可治理地执行任务</text>
+<circle cx="640" cy="360" r="154" fill="#EAF2F8" stroke="#1565C0" stroke-width="3"/><circle cx="640" cy="360" r="105" fill="#FFFFFF" stroke="#CBD5E1"/><use data-icon="phosphor-duotone/robot" x="598" y="268" width="84" height="84" fill="#1565C0"/>
+<text x="640" y="390" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">基础执行层</text><text x="640" y="424" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" fill="#64748B">Mid-small LLMs</text>
+<line x1="510" y1="278" x2="310" y2="190" stroke="#CBD5E1" stroke-width="2"/><line x1="770" y1="278" x2="970" y2="190" stroke="#CBD5E1" stroke-width="2"/><line x1="490" y1="430" x2="295" y2="535" stroke="#CBD5E1" stroke-width="2"/><line x1="790" y1="430" x2="985" y2="535" stroke="#CBD5E1" stroke-width="2"/>
+<use data-icon="phosphor-duotone/chart-line-up" x="248" y="146" width="48" height="48" fill="#1565C0"/><text x="310" y="172" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#0B1F3A">低成本高频调用</text><text x="310" y="203" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#64748B">分类、摘要、检索改写、格式校验</text>
+<use data-icon="phosphor-duotone/users-three" x="926" y="146" width="48" height="48" fill="#1565C0"/><text x="986" y="172" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#0B1F3A">角色专用化</text><text x="986" y="203" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#64748B">规划、执行、评审、安全过滤</text>
+<use data-icon="phosphor-duotone/cloud-check" x="232" y="510" width="48" height="48" fill="#1565C0"/><text x="294" y="536" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#0B1F3A">私有化与边缘部署</text><text x="294" y="567" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#64748B">本地服务器、端侧、弱网环境</text>
+<use data-icon="phosphor-duotone/shield-check" x="942" y="510" width="48" height="48" fill="#1565C0"/><text x="1004" y="536" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#0B1F3A">可控与安全治理</text><text x="1004" y="567" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="15" fill="#64748B">权限、审计、人工复核和升级</text>
+<rect x="476" y="604" width="328" height="42" rx="21" fill="#0B1F3A"/><text x="640" y="632" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFFFFF">系统分工优先于模型大小竞争</text>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8"></text>
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">04 / 10</text>
+</svg>

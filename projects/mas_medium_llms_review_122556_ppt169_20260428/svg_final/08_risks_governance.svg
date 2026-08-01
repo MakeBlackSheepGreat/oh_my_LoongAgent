@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<defs>
+  <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0B1F3A" />
+    <stop offset="100%" stop-color="#1565C0" />
+  </linearGradient>
+  <radialGradient id="bgDecor" cx="82%" cy="12%" r="60%">
+    <stop offset="0%" stop-color="#22C1C3" stop-opacity="0.18" />
+    <stop offset="100%" stop-color="#22C1C3" stop-opacity="0" />
+  </radialGradient>
+  
+</defs>
+<rect x="0" y="0" width="1280" height="720" fill="#F7FAFC" />
+
+<text x="56" y="68" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0B1F3A">多智能体不天然更可靠：错误可能被放大</text>
+
+<path fill="#D97706" fill-opacity="0.12" stroke="#D97706" d="M72,96 H1208 A16,16 0 0 1 1224,112 V150 A16,16 0 0 1 1208,166 H72 A16,16 0 0 1 56,150 V112 A16,16 0 0 1 72,96 Z" />
+  <g transform="translate(82.0, 111.0) scale(0.15625)" fill="#D97706">
+    <path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z" opacity="0.2" />
+    <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z" />
+  </g>
+<text x="140" y="139" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#D97706">多智能体系统会把单模型风险扩展为流程风险、权限风险和协作风险。</text>
+<path fill="#FFFFFF" stroke="#CBD5E1" d="M88,210 H592 A18,18 0 0 1 610,228 V522 A18,18 0 0 1 592,540 H88 A18,18 0 0 1 70,522 V228 A18,18 0 0 1 88,210 Z" /><text x="102" y="252" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">主要挑战</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="102" y="306">1. 能力上限：复杂推理、长上下文、高风险决策</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="102" y="348">2. 协作可靠性：级联幻觉、群体思维、责任模糊</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="102" y="390">3. 工具风险：错误参数、接口失败、越权调用</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="102" y="432">4. 评价不足：不能只看单模型 benchmark</text><path fill="#EAF2F8" stroke="#CBD5E1" d="M688,210 H1192 A18,18 0 0 1 1210,228 V522 A18,18 0 0 1 1192,540 H688 A18,18 0 0 1 670,522 V228 A18,18 0 0 1 688,210 Z" /><text x="702" y="252" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="25" font-weight="bold" fill="#0B1F3A">治理抓手</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="702" y="306">1. 任务难度分级与模型升级</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="702" y="348">2. 中间产物校验与日志回放</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="702" y="390">3. 权限最小化、沙箱执行、人工确认</text><text text-anchor="start" font-size="20" fill="#1F2937" font-weight="regular" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" x="702" y="432">4. 端到端成功率、成本和安全性评估</text><g transform="translate(1120.0, 450.0) scale(0.2109375)" fill="#1565C0">
+    <path d="M216,56v58.77c0,84.18-71.31,112.07-85.54,116.8a7.54,7.54,0,0,1-4.92,0C111.31,226.86,40,199,40,114.79V56a8,8,0,0,1,8-8H208A8,8,0,0,1,216,56Z" opacity="0.2" />
+    <path d="M208,40H48A16,16,0,0,0,32,56v58.78c0,89.61,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.78,91-124.39V56A16,16,0,0,0,208,40Zm0,74.79c0,78.42-66.35,104.62-80,109.18-13.53-4.51-80-30.69-80-109.18V56H208ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.68l50.34-50.34a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z" />
+  </g>
+<text x="640" y="610" text-anchor="middle" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="20" font-weight="bold" fill="#1565C0">结论：中小模型能降低执行成本，但可靠性来自系统级治理，而非模型大小本身。</text>
+<text x="56" y="682" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8" />
+<text x="1188" y="682" text-anchor="end" font-family="&quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, Arial, sans-serif" font-size="12" fill="#94A3B8">08 / 10</text>
+</svg>

@@ -1,0 +1,13 @@
+This project is licensed under the Apache License, Version 2.0.
+
+Third-party material included in this workspace retains its own copyright and
+license terms. The following component is present as a separate asset and is
+not part of the core runtime or evaluation baseline:
+
+- ppt-master/
+  MIT License
+  Copyright (c) 2025-2026 Hugo He
+  Source: https://github.com/hugohe3/ppt-master
+  See ppt-master/LICENSE for the full license text.
+
+See ATTRIBUTIONS.md for source, provenance, and release-status records.

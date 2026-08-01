@@ -1,0 +1,1061 @@
+CogVLM2: Visual Language Models for Image and
+Video Understanding
+Wenyi Hong Weihan Wang Ming Ding Wenmeng Yu Qingsong Lv Yan Wang
+Yean Cheng Shiyu Huang Junhui Ji Zhao Xue Lei Zhao Zhuoyi Yang Xiaotao Gu
+Xiaohan Zhang Guanyu Feng Da Yin Zihan Wang Ji Qi Xixuan Song
+Peng Zhang Debing Liu Bin Xu Juanzi Li Yuxiao Dong Jie Tang
+1Zhipu AI 2Tsinghua University
+Abstract
+Beginning with VisualGLM and CogVLM, we are continuously exploring VLMs in
+pursuit of enhanced vision-language fusion, efficient higher-resolution architecture,
+and broader modalities and applications. Here we propose the CogVLM2 family,
+a new generation of visual language models for image and video understanding
+including CogVLM2, CogVLM2-Video and GLM-4V . As an image understanding
+model, CogVLM2 inherits the visual expert architecture with improved training
+recipes in both pre-training and post-training stages, supporting input resolution up
+to 1344 × 1344 pixels. As a video understanding model, CogVLM2-Video inte-
+grates multi-frame input with timestamps and proposes automated temporal ground-
+ing data construction. Notably, CogVLM2 family has achieved state-of-the-art
+results on benchmarks like MMBench, MM-Vet, TextVQA, MVBench and VCG-
+Bench. All models are open-sourced in https://github.com/THUDM/CogVLM2
+and https://github.com/THUDM/GLM-4, contributing to the advancement of
+the field.
+VisualGLM CogVLM 
+CogVLM2
+CogVLM2-Video
+GLM-4V-9B
+CogAgent
+CogVLM-grounding
+Visual Expert
+Visual GUI Agent
+Visual grounding
+Text-image co-training
+Video Understanding
+2023.5 2023.10
+2023.10
+2023.12 2024.7
+2024.5
+2024.6
+Family
+Image understanding
+Video understanding
+Visual GUI agent
+Visual grounding
+Figure 1: Overview of CogVLM family.
+Core contributors: Wenyi, Weihan, Ming, Wenmeng, Qingsong, Yan, Yean, Shiyu and Junhui.
+arXiv:2408.16500v1  [cs.CV]  29 Aug 2024
+
+1 Introduction
+In recent years, large language models (LLMs) have demonstrated increasingly powerful language
+comprehension and generation capabilities, and are gradually helpful to our daily life. Despite their
+extensive knowledge and strong capability, LLMs are limited to accepting only text-based input,
+which significantly restricts their range of applications and prevents them from acquiring broader
+knowledge from the vast amounts of visual data available. Therefore, how to equip LLMs with
+the capability of perceiving the world visually, i.e. to develop visual language models (VLMs) has
+become a popular research topic.
+Since April 2023, CogVLM Team are actively engaged in the research of visual language models. As
+shown in Figure 1, we have successively open-sourced a family of visual language models covering
+a wide range of modalities and capabilities including image understanding, video understanding,
+visual grounding, GUI (Graphical User Interfaces) agent, etc.
+As our initial effort in developing a visual language model, VisualGLM is the first open-source
+multi-modal dialog language model that supports both Chinese and English. The model is built on an
+architecture similar to BLIP-2 [33] and is trained based on the ChatGLM-6B.
+While VLMs are all built upon powerful LLMs, we have observed that VLMs typically employ
+shallow alignment techniques to connect image features with the LLM, which hinders deep integra-
+tion and understanding between visual and linguistic modalities. To overcome this, we proposed
+CogVLM [78] and its grounding version CogVLM-grounding. CogVLM features the design of
+visual experts, which enables a deep fusion of vision language features without sacrificing natural
+language performance.
+To explore VLM’s application in the domain of GUI agents, we proposedCogAgent [20] based on
+CogVLM’s robust visual understanding capabilities. We propose a high-resolution cross-module
+to efficiently enhance the image resolution processed by the model to 1120 × 1120 pixels, thereby
+improving its text recognition and GUI comprehension abilities.
+To further boost the visual understanding capability, we proposed the CogVLM2 (CogVLM2-
+LLaMA3-8B) model based on LLaMA3-8B and the GLM-4V-9B model based on GLM-4-9B.
+Both CogVLM2 and GLM-4V share nearly the same enhanced training recipe, while the only
+difference is that CogVLM2 adopts visual expert to preserve language capability while GLM-4V
+uses text-image co-training. CogVLM2 has surpassed many latest closed-source models in natural
+image understanding and OCR capabilities, achieving top scores on various benchmarks including
+MMBench [45], VCR [92], MM-Vet [86], TextVQA [72], DocVQA [61], and ChartQA [58]. GLM-
+4V-9B complemented CogVLM2’s performance, excelling in OCRbench with the highest score
+among all models. It also showed strong results in MMStar [11], AI2D [26] and MMMU [88], often
+outperforming other open-source models. These results demonstrate the versatility and effectiveness
+of both models across a wide range of visual understanding tasks.
+To extend CogVLM family’s modality to video, recently we proposed CogVLM2-Video . We
+propose an automated temporal grounding data construction method based on visual models, and
+introduce multi-frame video images and timestamps as encoder inputs. CogVLM2-Video not only
+achieves state-of-the-art performance on public video understanding benchmarks but also excels in
+video captioning and temporal grounding, providing a powerful tool for subsequent tasks such as
+video generation and video summarization.
+In summary, the research and advancements of the CogVLM model family focus on, but are not
+limited to, the following aspects:
+• Enhanced vision-language fusion . Vision-language fusion is a critical topic in VLM
+training. In VisualGLM (2023.5), we utilize Qformer as the only trainable parameters to
+align the image and language spacer. To achieve deeper vision-language alignment without
+compromising language performance, we designed the Visual Expert architecture and
+employed it in CogVLM and CogVLM2 (2023.10). Aiming to develop natively multimodal
+models and promote further multimodal integration, we are actively exploring mixed vision-
+language training of text and image data such as in GLM-4V-9B (2024.6).
+• Higher input resolution with efficient architecture. While there is a widespread demand
+for high-resolution image understanding such as fine-grained image recognition and doc-
+2
+
+ument understanding, it often results in prohibitive memory and computational costs. To
+overcome this, we proposed efficient high-resolution cross-module in the design of CogA-
+gent (2023.12), increasing the input resolution of general-domain VLM to 1120 × 1120 for
+the first time. We further investigated post-downsample, i.e. downsample the output feature
+of image encoder, in the training of CogVLM2, GLM-4V and CogVLM2-Video (2024.5),
+and found that a 2 × 2 post-downsample with convolutional operator results in almost no
+noticeable performance degradation, allowing the image sequences to be further shortened.
+• Broader modalities and applications. Since our research on CogVLM, we have progres-
+sively being aware of the powerful visual comprehension capabilities of VLM. Therefore, we
+are dedicated to extending its applications and modalities further, such as visual grounding
+in CogVLM-grounding (2023.10), GUI agent in CogAgent (2023.12) and video understand-
+ing (2024.7).
+It is noteworthy that we have open-sourced all the aforementioned VLM models to the research
+community. We hope that our efforts can provide a foundation and offer insights to ongoing research
+and development in the field of VLM.
+2 The CogVLM2 Family
+The CogVLM family of models comprises four key components: a Vision Transformer (ViT [ 3])
+encoder, an adapter, a language model, and an optional visual expert module. Table 1 provides a
+comparison of different model architectures within the CogVLM series. Figure 2 shows the overall
+architecture of all CogVLM2 models including CogVLM2, CogVLM2-Video and GLM-4V .
+The ViT encoder transforms discrete raw image inputs into continuous image features rich in
+semantic content. We employ the state-of-the-art EV A-CLIP [74] model as our image encoder, which
+demonstrates robust performance across various language model sizes and architectural designs.
+The adapter serves as a bridge between visual and linguistic features. While existing approaches like
+BLIP-2 [33] and Qwen-VL [5] utilize Q-former for feature alignment, and models such as LLaV A
+[43] and PaLI [13] implement a linear layer for this purpose, both methods have limitations. Q-former
+significantly reduces image sequence length but introduces lossy transformation, sacrificing image
+details and spatial information. Conversely, LLaV A’s linear mapping, though simple and effective,
+suffers from computational inefficiency due to extended image sequences and the limited expressive
+capacity of a single linear layer.
+To address these challenges, our adapter incorporates a 2 ×2 convolutional layer followed by a
+SwiGLU [71] module. This design reduces the sequence length output by the ViT to one-quarter
+of its original size through the convolutional layer. Subsequently, the SwiGLU module aligns these
+features with linguistic representations, achieving a near-lossless transformation that preserves critical
+image information while enhancing computational efficiency.
+CogVLM2 Similar to the first generation of CogVLM, CogVLM2 features the architecture of
+visual expert in both the attention and FFN module. This architectural innovation facilitates a deep
+fusion of visual and linguistic features while preserving the model’s inherent language capabilities.
+For a comprehensive analysis of this implementation, readers are referred to the CogVLM study [78].
+Different from the first generation model, CogVLM2 further adopts 2×2 downsampling module to
+increase input resolution while preserving efficiency, and using LLaMA3-8B as the LLM backbone.
+Besides, we continuously enhance the pre-training as well as post-training data from both diversity
+and quality aspects, which is detailed in Sec 3.1 and Sec 4.1.
+CogVLM2-Video Currently, the mainstream approach in video understanding involves using image
+encoders to extract frames from videos, encoding them, and then designing encoding compression
+modules (e.g., temporal pooling [ 53; 81] or Q-Former modules [ 90; 35]) to compress the video
+encoding information before inputting it into a large language model (LLM) for joint understanding
+with textual inputs. Although this method effectively compresses video information, it causes the
+model to lose temporal awareness, preventing it from accurately associating video frames with precise
+timestamps. Consequently, the model lacks the capability for temporal localization, timestamp
+detection, and summarizing key moments. Additionally, video understanding models trained with
+existing temporal grounding annotated data are limited by the data’s scope and the fixed format of
+3
+
+Table 1: Comparison of different model architectures. CA denotes cross attention.
+Model Parameters Image Encoder LLM Backbone Adapter Visual Expert
+VisualGLM 7B EV A-CLIP-G ChatGLM-6B Q-former
+CogVLM 17B EV A-CLIP-E Vicuna-1.5-7B SwiGLU
+CogAgent 18B EV A-CLIP-L/E Vicuna-1.5-7B CA + SwiGLU
+CogVLM2 19B EV A-CLIP-E LLaMA3-8B Conv + SwiGLU
+GLM-4V-9B 13B EV A-CLIP-E GLM4-9B Conv + SwiGLU
+CogVLM2-Video 12B EV A-CLIP-E LLaMA3-8B Conv + SwiGLU
+question-answering [79; 51; 67; 39], resulting in a lack of open-domain question-answering and
+processing capabilities. To address these issues, we propose CogVLM2-Video, an extended video
+model based on the CogVLM2 image understanding model. This model not only achieves state-of-
+the-art performance in open-domain question-answering but also perceives timestamp information
+within videos, enabling temporal localization and related question-answering. Specifically, we extract
+frames from the input video segments and annotate them with timestamp information, allowing the
+subsequent language model to accurately know the exact time each frame corresponds to in the
+original video.
+GLM-4V With the similar training recipe and model architecture as CogVLM2, we further propose
+GLM-4V , a 13-billion-parameter bilingual visual language model to explore the image understanding
+capabilities in both English and Chinese. GLM-4V-9B is pre-trained based on GLM-4-9B [ 17],
+a recently released open-sourced pre-trained bilingual language model by Zhipu AI. GLM-4V’s
+architecture is similar to CogVLM2, and accommodates input images with a resolution of 1120 ×
+1120 pixels. The input images are first patchified and processed by a 4B-parameter ViT (EV A-E),
+downsampled by 2 × 2, then concatenated with language embeddings and fed into the language
+decoder. We chose a large-scale ViT because we found it critical to the performance of Chinese
+character recognition. To reduce deployment and computation costs, we preserved the model’s
+language knowledge by image-language co-training instead of utilizing vision experts. However, we
+observed that the loss of language and image understanding exhibited a competitive relationship,
+inevitably leading to a slight degradation in the performance of language tasks. Additionally, we
+present GLM-4V-Plus models, pre-trained for both image and video understanding tasks using the
+same training recipe. GLM-4V-Plus achieved state-of-the-art performance on a series of image and
+video understanding benchmarks. Please refer to Table 4 and Table 5 for more details.
+3 Pre-training
+Pre-training is a foundational phase in the training of VLMs, designed to enhance the model’s
+fundamental ability to understand complex multimodal data. This section provides a comprehensive
+overview of the methodologies and datasets employed in the pre-training of the CogVLM family.
+We first discuss our techniques for data processing and generation, including iterative refinement
+and synthetic data generation, then elaborate on the progressive construction of our pre-training
+datasets. Furthermore, we explore various pre-training settings that balance the integration of visual
+and language modalities to achieve optimal model performance across a diverse array of tasks.
+3.1 Pre-training Data
+The aim of visual language pre-training is to endow models with the capability to comprehend
+visual input and align with language space based on large-scale image-text pairs. While there are
+several open-source large-scale image-text pair datasets, such as LAION [68] and DataComp [15],
+they generally contain significant noise and obtaining high-quality image-text pairs is challenging.
+Additionally, these datasets focus on coarse-grained natural language descriptions of real images,
+resulting in limited distribution. To address this, we employs two main techniques to obtain and
+process the pre-training dataset:
+Iterative Refinement. While large-scale image-text datasets provide with massive visual language
+knowledge, they are often noisy or weakly related. Therefore, we use iterative refinement to enhance
+4
+
+Figure 2: The architecture of the CogVLM Family. Taking a high resolution image or the extracted
+frames from a given video, CogVLM models embed visual information with a pre-trained ViT
+Encoder and an Adapter. The embedded visual features are sent to a Visual Language Decoder.
+CogVLM2-Video is capable of answering image-related and video-related queries.
+the data quality. To begin with, the initial model is trained on publicly available datasets, and
+then used to re-annotate a new batch of data. The annotations generated by the model undergo
+meticulous manual correction to ensure their accuracy. The corrected data is subsequently used to
+iteratively refine and enhance future versions of the model. This iterative process fosters continuous
+improvement in the quality of the training data and, consequently, the model’s performance.
+Synthetic Data Generation. The large-scale image-text datasets often focus on coarse-grained
+natural language descriptions of real images, resulting in limited distribution. For example, they
+commonly lack data for Chinese text recognition and GUI image understanding. To endow models
+with a more diverse range of fundamental visual capabilities, we create part of the datasets by
+synthesizing data according to specific rules or utilizing advanced tools to generate high-quality
+image-text pairs.
+Utilizing these two techniques, the construction of pre-training data for CogVLM family is progressive
+and incremental. Here we presents the datasets and their usage in chronological order:
+LAION-2B and COYO-700M [9] are two extensive, publicly available datasets comprising numerous
+images paired with corresponding captions. These datasets form the foundational base for the pre-
+training stages of all models in CogVLM family, offering a diverse collection of image-text pairs
+essential for effective model training.
+LAION-40M-grounding is an in-house grounding dataset developed using LAION-400M [69] and
+GLIPv2 [91]. This specialized dataset is designed to enhance the model’s grounding capabilities,
+making it particularly suitable for use in models such as CogVLM-grounding and CogAgent, which
+require precise and accurate grounding annotations.
+The Digital World Grounding Dataset consists of 7 million English and 5 million Chinese entries.
+This dataset is created by crawling web pages with a web browser, capturing screenshots along
+with all visible DOM elements and their corresponding rendered boxes using Playwright 1. This
+comprehensive approach allows for the creation of REC (Referring Expression Comprehension) and
+1https://playwright.dev
+5
+
+REG (Referring Expression Generation) question-answer pairs, significantly enhancing the model’s
+ability to understand and generate natural language descriptions for visual elements.
+The Synthetic OCR Dataset is another vital component of the pre-training data. This dataset includes
+120 million English and 150 million Chinese entries, focusing on four specific OCR scenarios: (1)
+fully generated OCR images with source text printed on the images using Python; (2) real-world
+images with extracted text obtained using PaddleOCR [ 32]; (3) academic papers with extracted
+LaTeX code by Nougat [8]; and (4) HTML or LaTeX code of tables and formulae rendered to images
+using various tools. This extensive dataset is utilized in models such as CogAgent, CogVLM2, and
+GLM-4V to enhance their OCR capabilities.
+Finally, CLAY-1Bis an in-house recaption dataset built upon LAION-2B and COYO-700M. This
+dataset is developed with the aid of a fine-tuned CogVLM model specifically designed to generate
+long, detailed captions for images. The Chinese captions in this dataset are translated by a fine-tuned
+ChatGLM. CLAY-1B is used in models like CogVLM2 and GLM-4V to improve their captioning
+abilities.
+3.2 Pre-training Settings
+With a pre-trained language model as a starting point, the primary objective during visual language
+pre-training is to incorporate the image modality into the model while minimizing potential decline
+in its language abilities. To achieve this, three main visual-language training methodologies are
+explored:
+The first approach involves progressively enabling more trainable parameters as pre-training stages
+advance. For instance, in the initial stage of CogAgent, only the cross-attention layers are trained.
+As training progresses, additional parameters, such as those of the Vision Transformer (ViT) or
+other vision experts, are gradually made trainable. This staged approach ensures that the model can
+seamlessly integrate the image modality without compromising its pre-existing language capabilities.
+The second approach involves training all parameters simultaneously but utilizing both language
+pre-training data and visual-language pre-training data. This method, particularly adopted in GLM-4V
+training, ensures that the model is exposed to a balanced mix of data types, thereby maintaining its
+language abilities while effectively incorporating visual information.
+The third approach entails gradually increasing the input image resolution as training progresses.
+By starting with lower resolution images and progressively enhancing the resolution, the model can
+adapt to handling higher-quality visual information over time. This gradual increase in resolution
+allows the model to capture and comprehend the finer details in images, thereby enhancing its overall
+visual comprehension capabilities.
+These pre-training settings are meticulously designed to optimize the integration of visual and
+language modalities, ensuring that the resulting models can perform effectively across a broad
+spectrum of tasks involving both text and images.
+4 Post-training
+4.1 Post-training Data
+Image Post-Training Datasets. Our image post-training datasets is composed of a collection of
+open-sourced visual question-answering (VQA) datasets and annotateded alignment data.
+The whole collection of VQA datasets are listed in Table 2. Experimental results show that incorporat-
+ing more and broader VQA data can continuously and effectively enhance the model’s performance.
+Consequently, in comparison to CogVLM [78], we added more VQA datasets in CogVLM2 and
+GLM-4V . During our experiments, we observed that add VQA data with concise responses (such as
+VQAv2 [4]) could detract from the model’s conversational performance. To deal with it, we prefixed
+concise answers with “Short Answer” to distinguish VQA-type concise responses from dialogue-type
+responses, thereby reducing interference between the two.
+Moreover, we meticulously annotated approximately 300K alignment corpora. Based on the char-
+acteristics of the images and instructions, these corpora are categorized into different categories for
+6
+
+Table 2: VQA datasets used in image understanding models. The "Type" column signifies the format
+of the answers provided. "0" corresponds to concise responses, such as multiple-choice, Y/N, etc.
+"1" denotes comprehensive answers that incorporate a chain of thought processes.
+Categories Datasets Type CogVLM CogVLM2 GLM4V-9B
+General QA
+OKVQA [55] 0 ✓ ✓ ✓
+STVQA [7] 0 ✓ ✓
+VGQA [30] 0 ✓ ✓
+VQA V2 [4] 0 ✓ ✓ ✓
+A-OKVQA [70] 0 ✓
+TQA [28] 0 ✓
+OCR
+IAM [56] 1 ✓
+DocVQA [62] 0 ✓ ✓
+OCRVQA [64] 0 ✓ ✓ ✓
+TextVQA [73] 0 ✓ ✓ ✓
+Rendered_text2 0 ✓
+Math & Science
+GeoMetry3K [47] 0 ✓ ✓
+Geo170K [16] 1 ✓ ✓
+GeoQA [10] 0 ✓ ✓
+Geomverse [25] 1 ✓
+Raven [89] 1 ✓
+InterGPS [47] 0 ✓
+Ai2D [26] 0 ✓
+ScienceQA [48] 1 ✓ ✓ ✓
+Chart Analysis
+ChartQA [57] 0 ✓ ✓
+FigureVQA [24] 0 ✓ ✓
+InfoVQA [60] 0 ✓ ✓
+DVQA [22] 0 ✓ ✓
+ArxivQA [37] 1 ✓ ✓
+TabMWP [49] 1 ✓
+VQARAD [31] 0 ✓
+Other
+VSR [40] 0 ✓
+TDIUC [23] 0 ✓ ✓
+TallyQA [1] 0 ✓ ✓
+IconQA [50] 0 ✓
+VisText [75] 0 ✓
+Diagram_image_to_text3 1 ✓
+proportional control during training. Additionally, we annotated 50K preference alignment corpora
+to steer the model towards generating outputs that align with human preferences.
+Table 3: Datasets used in video understanding models.
+Categories Datasets
+Video Caption In-house Detailed Caption Dataset
+Video QA
+VideoChat [34], VideoChatGPT [53], NExT-QA [80]
+CLEVRER [84], Kinetics-710 [36], SthSthV2 [18]
+Ego4D [19], TGIF-QA [21], WebVidQA [82]
+In-house VideoQA Dataset
+Temporal Grounding TQA Dataset
+7
+
+Figure 3: The pipeline for temporal grounding data generation. In this pipeline, we first extract frames
+from the video and then use CogVLM2 for image captioning. Next, we use GPT-4o to evaluate the
+series of image captions for each video, identifying videos with significant scene content changes and
+filtering out those with minor scene content changes. Finally, using a few-shot approach, GPT-4o
+generates time-related question-answer pairs based on the image captions. More details can be found
+in Appendix A.
+Video TQA Dataset. The training of video understanding models using existing temporal grounding
+annotation data is limited by the scope of the data and the fixed format of question and answer
+pairs [79; 51; 67; 39], lacking the capability for open-domain question answering and processing.
+Compared to the plain text data used to train LLMs and the image understanding data used to train
+VLMs, the annotation cost for high-quality video question answering and temporal grounding data
+is extremely high. Manual annotation alone cannot meet the demands of large-scale training. To
+prepare temporal grounding data suitable for large-scale training, we developed a fully automated
+video question-answering data generation process as shown in Figure 3. We leverage the latest image
+understanding models to extract frame-level understanding from video data, and then use GPT-4o [65]
+for data filtering and generation. Through this automated data processing workflow and large-scale
+training, CogVLM2-Video not only excels on public benchmarks but also possesses the temporal
+question-answering capability that most previous video models lacked. Through this pipeline, we
+ultimately generated 30k Temporal Grounding Question and Answer (TQA) data points. More details
+for generating the TQA dataset can be found in Appendix A.
+4.2 Post-training Settings
+Image Supervised Fine-tuning. In CogVLM2 and GLM-4V , we employed a two-stage SFT
+training approach. In the first stage, we utilized all VQA training datasets and the 300K alignment
+corpora to enhance the model’s foundational capabilities, addressing the limitations of pre-training
+on image captioning tasks. In the second stage, we selected a subset of VQA datasets and the
+50K preference alignment data to optimize the model’s output style, closely aligning with human
+preferences.
+In the first stage, the model underwent 3000 iterations with a learning rate of 1e-5 and a global batch
+size of 2340. Subsequently, in the second stage, we reduced the global batch size to 1150 for 750
+steps. We performed the image SFT process by fine-tuning all parameters. To enhance and ensure the
+stability of the training, we activated the visual encoder’s parameters and adjusted its learning rate to
+be one-tenth of that used for the remaining training parameters.
+Video Supervised Fine-tuning. Starting from a pre-trained 224 × 224 variant of CogVLM2 image
+understanding model, CogVLM2-Video takes 24 frames as input and extract visual information
+sequentially. We add an additional convolution layer with 2 × 2 kernel at the end of the ViT model to
+further compress the video features. The training process consists of two stages: instruction tuning
+and temporal grounding tuning. All the parameters are trainable throughout these two stages. In the
+instruction tuning stage, in-house detailed caption data and public available question-answering data
+are utilized to improving the general video understanding capability of the model, with a learning rate
+of 4e − 6. We mainly used the instruction data provided in VideoChat2, without the simple caption
+datasets. We also collected an in-house video QA dataset for better temporal understanding. A total
+of 330k video samples are utilized in the instruction tuning. In the temporal grounding tuning stage,
+CogVLM2-Video is trained on the TQA Dataset with a learning rate of1e − 6. The complete training
+process takes around 8 hours with a cluster of 8 nodes of NVIDIA A100 machines. For different
+application senarios, we release two models: "cogvlm2-video-llama3-base" and "cogvlm2-video-
+8
+
+llama3-chat". "cogvlm2-video-llama3-base" is the model trained with datasets in stage one, excelling
+the existing video understanding benchmarks; "cogvlm2-video-llama3-chat" is the model further
+fine-tuned on the TQA Dataset, which has the temporal grounding capability. Please refer to Table 3
+for detailed video instruction corpus.
+5 Evaluation
+Here we evaluate our CogVLM2 family, including CogVLM2, CogVLM2-Video, GLM-4V-9B.
+Following the training recipe of GLM-4V-9B and CogVLM2-Video, we further pre-trained GLM-4V-
+Plus, powerful internal visual language models capable of image and video understanding which are
+available at Zhipu MaaS platform4. Our comprehensive evaluation of the CogVLM2 family spans
+a wide range of image and video understanding tasks, demonstrating its capabilities across diverse
+visual domains.
+TextVQA
+DocVQA
+OCRbench
+MMBench
+MMVetMMMU
+ChartQA
+MMStar
+AI2D
+68.25
+74.5
+80.75
+64.5
+74.0
+83.5
+645.0
+710.0
+775.0
+61.0
+69.0
+77.0
+44.25
+53.5
+62.75
+2.5
+25.0
+47.5
+47.5
+60.0
+72.5
+34.75
+44.5
+54.25
+58.75
+67.5
+76.25
+N/A
+Cambrian-34B
+Claude3.5-Sonnet
+Gemini Pro 1.5
+GPT-4V-20240409
+CogVLM2-LLaMA3
+GLM-4V-9B
+GLM-4V-Plus
+(a) Evaluation results on image tasks
+VCG-A VG
+VCG-CI
+VCG-DO
+VCG-CU
+VCG-TU
+VCG-COLVBench
+MV-A VG
+MV-Action
+MV-Object
+MV-Cognition
+3.13
+3.26
+3.39
+3.15
+3.3
+3.46
+2.84
+3.08
+3.33
+3.62 3.74 3.85
+2.62
+2.75
+2.88
+2.84
+3.08
+3.33
+29.12
+32.25
+35.38
+49.5
+57.0
+64.5
+55.561.066.5
+42.62
+52.25
+61.88
+39.25
+45.5
+51.75
+N/A
+IG-VLM GPT4V
+ST-LLM
+ShareGPT4Video
+VideoGPT+
+VideoChat2_HD_mistral
+PLLaV A-34B
+GPT4o
+Gemini
+CogVLM2-Video
+GLM-4V-Plus (b) Evaluation results on video tasks.
+Figure 4: Performance visualization of CogVLM2 family with radar charts.
+5.1 Evaluation of Image Tasks
+We evaluate our models on multiple image tasks alongside widely used large visual language models,
+including both proprietary and open-source variants, as detailed in Table 4. To comprehensively
+assess the performance of our models, we select the following tasks: (1) OCR comprehension:
+TextVQA [72], DocVQA [63], OCRbench [46], VCR [92]); (2) Chart and diagram understanding:
+ChartQA [59], AI2D [ 27]; (3) Subject-specific question answering: MMMU [ 88]; (4) General
+question answering: MMVet [ 87], MMBench [ 45], MMStar [ 11] and MME [ 85]. Compared to
+open-source models of similar parameter scales, CogVLM2 and GLM-4V-9B achieve state-of-the-art
+performance on most tasks, and even surpass models of much larger scale such as Mini-Gemini 34B,
+LLaV A-NeXT-110B and proprietary models such as QwenVL-Plus, Claude3-Opus, Gemini 1.5 Pro,
+GPT-4v-20231106 on multiple benchmarks.
+5.2 Evaluation of Video Tasks
+CogVLM2-Video achieves state-of-the-art performance on multiple video question-answering
+tasks. Table 5 shows the performance of CogVLM2-Video on the MVBench [35], VideoChatGPT-
+Bench [ 54] and LVBench [ 77]. Where MV-* refers to the MVBench, VCG-* refers to the
+VideoChatGPT-Bench. More details on MVBench can be found in Appendix C.
+6 Conclusion
+The CogVLM Family represents a significant advancement in the integration of visual and language
+modalities, addressing limitations of traditional LLMs that are restricted to text-based inputs. Here
+4https://bigmodel.cn/
+9
+
+Table 4: Image understanding performance comparison on popular benchmarks. The best results are bolded,
+and the second highest results are underlined.
+Model MMBench MMStar MMVet MMMU MME ChartQA AI2D TextVQA DocVQA VCR OCRbench
+Proprietary models
+Step-1V 80.7 50.0 63.3 49.9 - 57.7 79.2 71.6 - - 625Qwen-VL-Max[6] 77.6 49.5 61.8 52.0 2281 79.8 75.7 79.5 93.1 76.8 684Claude3.5-Sonnet 79.7 62.2 66 65.9 1920 - 80.2 - - 63.9 788Gemini 1.5 Pro[66] 73.9 59.1 64.0 60.6 2110 81.3 79.1 78.7 86.5 62.7 754GPT-4v-20231106[2] 77.0 49.7 56.8 53.8 1771 - 75.9 - - 52.0 516GPT-4o-20240513 83.4 63.9 69.1 69.2 2310 85.7 84.6 - 92.8 91.6 736
+Open-source models
+CogVLM1.1[78] 65.8 39.9 52.0 37.3 1737 68.3 63.3 69.7 - - 590Cambrian-34B[76] 80.4 54.2 53.2 50.4 2050 73.7 79.5 72.1 75.5 79.7 591LLaV A-V1.5-13B[41] 69.2 34.3 36.3 37.0 1781 18.2 61.1 48.9 - - 337Mini-Gemini[38] 80.6 - 59.3 48.0 - - - 74.1 - - -MiniCPM-Llama3-V2.5[83] 77.6 51.8 52.8 45.8 2025 - 78.4 76.6 84.8 31.8 725InternVL2-26B[14] 83.4 61.0 60.0 50.7 2259 84.9 84.5 82.5 92.9 74.5 825LLaV A-Next-Yi-34B[42] 81.1 51.6 50.7 48.8 2006 67.6 78.9 69.3 - - 574
+Ours
+CogVLM2-LLaMA3 80.5 50.5 60.4 44.3 1870 81.0 73.4 84.2 92.3 83.3 756GLM-4V-9B 81.1 58.7 58.0 47.2 2164 71.1 81.1 83.0 81.0 43.7 786GLM-4V-Plus 84.6 62.9 71.1 53.0 2275 83.1 83.9 86.6 92.3 - 833
+Table 5: Video understanding performance comparison on MVBench [35], VideoChatGPT-Bench [54] and
+LVBench [77]. The best results are bolded, and the second highest results are underlined.
+Model MV-A VG MV-Action MV-Object MV-Cognition VCG-A VG VCG-CI VCG-DO VCG-CU VCG-TU VCG-CO LVBench
+IG-VLM GPT4V [29] 43.7 62.2 35.7 33.7 3.17 3.40 2.80 3.61 2.89 3.13 -
+ST-LLM [44] 54.9 61.2 64.2 44.8 3.15 3.23 3.05 3.74 2.93 2.81 -
+ShareGPT4Video [12] 51.2 52.6 56.5 39.7 - - - - - - -
+VideoGPT+ [52] 58.7 65.4 65.7 44.5 3.28 3.27 3.18 3.74 2.83 3.39 -
+VideoChat2_HD_mistral [35] 62.3 63.4 53.5 51.0 3.10 3.40 2.91 3.72 2.65 2.84 -
+PLLaV A-34B [81] 58.1 65.7 57.5 54.0 3.32 3.60 3.20 3.90 2.67 3.25 26.1
+GPT-4o-2024-05-13 [65] 47.8 56.7 50.5 43.0 - - - - - - 34.7
+Gemini 1.5 Pro [66] 52.6 58.5 57.0 45.8 - - - - - - 33.1
+CogVLM2-Video (ours) 62.3 70.6 68.3 49.3 3.41 3.49 3.46 3.87 2.98 3.23 28.1
+GLM-4V-Plus (ours) 71.2 72.0 71.0 57.3 3.51 3.57 3.55 3.95 2.92 3.55 38.3
+we propose and open-source the CogVLM2 family. By introducing models capable of understanding
+and generating content from both images and videos, the CogVLM series expands the potential
+applications of LLMs in various domains, including document analysis, GUI comprehension, and
+temporal video grounding. The architectural innovations, such as the Visual Expert and high-
+resolution cross-modules, enable a seamless fusion of visual and linguistic features, enhancing the
+models’ performance without compromising their language capabilities. Furthermore, the efficient
+use of high-resolution inputs and sophisticated data generation techniques ensures that the models are
+well-equipped to handle complex visual-language tasks. Future research could explore even broader
+modalities and improved alignment techniques to further enhance the capabilities of VLMs. Overall,
+the CogVLM Family sets a new benchmark for open-source VLMs, providing powerful tools for
+both academic research and practical applications.
+10
+
+References
+[1] M. Acharya, K. Kafle, and C. Kanan. Tallyqa: Answering complex counting questions. In Proc.
+of Association for the Advancement of Artificial Intelligence, 2019.
+[2] J. Achiam, S. Adler, S. Agarwal, L. Ahmad, I. Akkaya, F. L. Aleman, D. Almeida,
+J. Altenschmidt, S. Altman, S. Anadkat, et al. Gpt-4 technical report. arXiv preprint
+arXiv:2303.08774, 2023.
+[3] D. Alexey. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv
+preprint arXiv: 2010.11929, 2020.
+[4] S. Antol, A. Agrawal, J. Lu, M. Mitchell, D. Batra, C. L. Zitnick, and D. Parikh. Vqa: Visual
+question answering. In Proc. of International Conference on Computer Vision, pages 2425–2433,
+2015.
+[5] J. Bai, S. Bai, S. Yang, S. Wang, S. Tan, P. Wang, J. Lin, C. Zhou, and J. Zhou. Qwen-vl: A
+frontier large vision-language model with versatile abilities. arXiv preprint arXiv:2308.12966,
+2023.
+[6] J. Bai, S. Bai, S. Yang, S. Wang, S. Tan, P. Wang, J. Lin, C. Zhou, and J. Zhou. Qwen-vl: A
+versatile vision-language model for understanding, localization, text reading, and beyond. arXiv
+preprint arXiv:2308.12966, 2023.
+[7] A. F. Biten, R. Tito, A. Mafla, L. Gomez, M. Rusiñol, C. Jawahar, E. Valveny, and D. Karatzas.
+Scene text visual question answering. In Proc. of International Conference on Computer Vision,
+pages 4290–4300, 2019.
+[8] L. Blecher, G. Cucurull, T. Scialom, and R. Stojnic. Nougat: Neural optical understanding for
+academic documents. arXiv preprint arXiv:2308.13418, 2023.
+[9] M. Byeon, B. Park, H. Kim, S. Lee, W. Baek, and S. Kim. Coyo-700m: Image-text pair dataset.
+https://github.com/kakaobrain/coyo-dataset, 2022.
+[10] J. Chen, J. Tang, J. Qin, X. Liang, L. Liu, E. P. Xing, and L. Lin. Geoqa: A geometric question
+answering benchmark towards multimodal numerical reasoning, 2022.
+[11] L. Chen, J. Li, X. Dong, P. Zhang, Y . Zang, Z. Chen, H. Duan, J. Wang, Y . Qiao, D. Lin,
+et al. Are we on the right way for evaluating large vision-language models? arXiv preprint
+arXiv:2403.20330, 2024.
+[12] L. Chen, X. Wei, J. Li, X. Dong, P. Zhang, Y . Zang, Z. Chen, H. Duan, B. Lin, Z. Tang, L. Yuan,
+Y . Qiao, D. Lin, F. Zhao, and J. Wang. Sharegpt4video: Improving video understanding and
+generation with better captions. arXiv preprint arXiv:2406.04325, 2024.
+[13] X. Chen, X. Wang, S. Changpinyo, A. Piergiovanni, P. Padlewski, D. Salz, S. Goodman,
+A. Grycner, B. Mustafa, L. Beyer, et al. Pali: A jointly-scaled multilingual language-image
+model. arXiv preprint arXiv:2209.06794, 2022.
+[14] Z. Chen, J. Wu, W. Wang, W. Su, G. Chen, S. Xing, M. Zhong, Q. Zhang, X. Zhu, L. Lu, B. Li,
+P. Luo, T. Lu, Y . Qiao, and J. Dai. Internvl: Scaling up vision foundation models and aligning
+for generic visual-linguistic tasks. arXiv preprint arXiv:2312.14238, 2023.
+[15] S. Y . Gadre, G. Ilharco, A. Fang, J. Hayase, G. Smyrnis, T. Nguyen, R. Marten, M. Wortsman,
+D. Ghosh, J. Zhang, et al. Datacomp: In search of the next generation of multimodal datasets.
+Advances in Neural Information Processing Systems, 36, 2024.
+[16] J. Gao, R. Pi, J. Zhang, J. Ye, W. Zhong, Y . Wang, L. Hong, J. Han, H. Xu, Z. Li, et al.
+G-llava: Solving geometric problem with multi-modal large language model. arXiv preprint
+arXiv:2312.11370, 2023.
+[17] T. GLM, A. Zeng, B. Xu, B. Wang, C. Zhang, D. Yin, D. Rojas, G. Feng, H. Zhao, H. Lai, et al.
+Chatglm: A family of large language models from glm-130b to glm-4 all tools. arXiv preprint
+arXiv:2406.12793, 2024.
+11
+
+[18] R. Goyal, S. E. Kahou, V . Michalski, J. Materzynska, S. Westphal, H. Kim, V . Haenel, I. Fründ,
+P. Yianilos, M. Mueller-Freitag, F. Hoppe, C. Thurau, I. Bax, and R. Memisevic. The “something
+something” video database for learning and evaluating visual common sense. In Proc. of
+International Conference on Computer Vision, 2017.
+[19] K. Grauman, A. Westbury, E. Byrne, Z. Chavis, A. Furnari, R. Girdhar, J. Hamburger, H. Jiang,
+M. Liu, X. Liu, M. Martin, T. Nagarajan, I. Radosavovic, S. K. Ramakrishnan, F. Ryan,
+J. Sharma, M. Wray, M. Xu, E. Z. Xu, C. Zhao, S. Bansal, D. Batra, V . Cartillier, S. Crane, T. Do,
+M. Doulaty, A. Erapalli, C. Feichtenhofer, A. Fragomeni, Q. Fu, C. Fuegen, A. Gebreselasie,
+C. González, J. M. Hillis, X. Huang, Y . Huang, W. Jia, W. Khoo, J. Kolár, S. Kottur, A. Kumar,
+F. Landini, C. Li, Y . Li, Z. Li, K. Mangalam, R. Modhugu, J. Munro, T. Murrell, T. Nishiyasu,
+W. Price, P. R. Puentes, M. Ramazanova, L. Sari, K. K. Somasundaram, A. Southerland,
+Y . Sugano, R. Tao, M. V o, Y . Wang, X. Wu, T. Yagi, Y . Zhu, P. Arbeláez, D. J. Crandall,
+D. Damen, G. M. Farinella, B. Ghanem, V . K. Ithapu, C. V . Jawahar, H. Joo, K. Kitani, H. Li,
+R. A. Newcombe, A. Oliva, H. S. Park, J. M. Rehg, Y . Sato, J. Shi, M. Z. Shou, A. Torralba,
+L. Torresani, M. Yan, and J. Malik. Ego4d: Around the world in 3,000 hours of egocentric
+video. In Proc. of Computer Vision and Pattern Recognition, 2022.
+[20] W. Hong, W. Wang, Q. Lv, J. Xu, W. Yu, J. Ji, Y . Wang, Z. Wang, Y . Dong, M. Ding, et al.
+Cogagent: A visual language model for gui agents. In Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, pages 14281–14290, 2024.
+[21] Y . Jang, Y . Song, Y . Yu, Y . Kim, and G. Kim. Tgif-qa: Toward spatio-temporal reasoning in
+visual question answering. In Proc. of Computer Vision and Pattern Recognition, 2017.
+[22] K. Kafle, S. Cohen, B. Price, and C. Kanan. Dvqa: Understanding data visualizations via
+question answering. In Proc. of Computer Vision and Pattern Recognition, 2018.
+[23] K. Kafle and C. Kanan. An analysis of visual question answering algorithms. In Proceedings of
+the IEEE international conference on computer vision, pages 1965–1973, 2017.
+[24] S. E. Kahou, V . Michalski, A. Atkinson, A. Kadar, A. Trischler, and Y . Bengio. Figureqa: An
+annotated figure dataset for visual reasoning, 2018.
+[25] M. Kazemi, H. Alvari, A. Anand, J. Wu, X. Chen, and R. Soricut. Geomverse: A systematic
+evaluation of large models for geometric reasoning. arXiv preprint arXiv:2312.12241, 2023.
+[26] A. Kembhavi, M. Salvato, E. Kolve, M. Seo, H. Hajishirzi, and A. Farhadi. A diagram is worth
+a dozen images, 2016.
+[27] A. Kembhavi, M. Salvato, E. Kolve, M. Seo, H. Hajishirzi, and A. Farhadi. A diagram is worth
+a dozen images. In Computer Vision–ECCV 2016: 14th European Conference, Amsterdam, The
+Netherlands, October 11–14, 2016, Proceedings, Part IV 14, pages 235–251. Springer, 2016.
+[28] A. Kembhavi, M. Seo, D. Schwenk, J. Choi, A. Farhadi, and H. Hajishirzi. Are you smarter
+than a sixth grader? textbook question answering for multimodal machine comprehension. In
+Proc. of Computer Vision and Pattern Recognition, pages 5376–5384, 2017.
+[29] W. Kim, C. Choi, W. Lee, and W. Rhee. An image grid can be worth a video: Zero-shot video
+question answering using a vlm, 2024.
+[30] R. Krishna, Y . Zhu, O. Groth, J. Johnson, K. Hata, J. Kravitz, S. Chen, Y . Kalantidis, L.-J. Li,
+D. A. Shamma, et al. Visual genome: Connecting language and vision using crowdsourced
+dense image annotations. International journal of computer vision, 123:32–73, 2017.
+[31] J. J. Lau, S. Gayen, A. Ben Abacha, and D. Demner-Fushman. A dataset of clinically generated
+visual questions and answers about radiology images. Scientific data, 5(1):1–10, 2018.
+[32] C. Li, W. Liu, R. Guo, X. Yin, K. Jiang, Y . Du, Y . Du, L. Zhu, B. Lai, X. Hu, et al. Pp-
+ocrv3: More attempts for the improvement of ultra lightweight ocr system. arXiv preprint
+arXiv:2206.03001, 2022.
+12
+
+[33] J. Li, D. Li, S. Savarese, and S. Hoi. Blip-2: Bootstrapping language-image pre-training with
+frozen image encoders and large language models. In International conference on machine
+learning, pages 19730–19742. PMLR, 2023.
+[34] K. Li, Y . He, Y . Wang, Y . Li, W. Wang, P. Luo, Y . Wang, L. Wang, and Y . Qiao. Videochat:
+Chat-centric video understanding. ArXiv, abs/2305.06355, 2023.
+[35] K. Li, Y . Wang, Y . He, Y . Li, Y . Wang, Y . Liu, Z. Wang, J. Xu, G. Chen, P. Luo, L. Wang, and
+Y . Qiao. MVBench: A comprehensive multi-modal video understanding benchmark, 2023.
+[36] K. Li, Y . Wang, Y . He, Y . Li, Y . Wang, L. Wang, and Y . Qiao. Uniformerv2: Spatiotemporal
+learning by arming image vits with video uniformer. ArXiv, abs/2211.09552, 2022.
+[37] L. Li, Y . Wang, R. Xu, P. Wang, X. Feng, L. Kong, and Q. Liu. Multimodal arxiv: A dataset for
+improving scientific comprehension of large vision-language models, 2024.
+[38] Y . Li, Y . Zhang, C. Wang, Z. Zhong, Y . Chen, R. Chu, S. Liu, and J. Jia. Mini-gemini: Mining
+the potential of multi-modality vision language models. arXiv preprint arXiv:2403.18814, 2024.
+[39] K. Q. Lin, P. Zhang, J. Chen, S. Pramanick, D. Gao, A. J. Wang, R. Yan, and M. Z. Shou. Univtg:
+Towards unified video-language temporal grounding. In Proc. of International Conference on
+Computer Vision, 2023.
+[40] F. Liu, G. Emerson, and N. Collier. Visual spatial reasoning. Proc. of IEEE International
+Conference on Automatic Face and Gesture Recognition, 11, 2023.
+[41] H. Liu, C. Li, Y . Li, and Y . J. Lee. Improved baselines with visual instruction tuning, 2024.
+[42] H. Liu, C. Li, Y . Li, B. Li, Y . Zhang, S. Shen, and Y . J. Lee. Llava-next: Improved reasoning,
+ocr, and world knowledge, January 2024.
+[43] H. Liu, C. Li, Q. Wu, and Y . J. Lee. Visual instruction tuning. Proc. of Neural Information
+Processing Systems, 36, 2024.
+[44] R. Liu, C. Li, H. Tang, Y . Ge, Y . Shan, and G. Li. St-llm: Large language models are effective
+temporal learners. https://arxiv.org/abs/2404.00308, 2023.
+[45] Y . Liu, H. Duan, Y . Zhang, B. Li, S. Zhang, W. Zhao, Y . Yuan, J. Wang, C. He, Z. Liu, K. Chen,
+and D. Lin. Mmbench: Is your multi-modal model an all-around player? arXiv:2307.06281,
+2023.
+[46] Y . Liu, Z. Li, B. Yang, C. Li, X. Yin, C. lin Liu, L. Jin, and X. Bai. On the hidden mystery of
+ocr in large multimodal models, 2024.
+[47] P. Lu, R. Gong, S. Jiang, L. Qiu, S. Huang, X. Liang, and S.-C. Zhu. Inter-gps: Interpretable
+geometry problem solving with formal language and symbolic reasoning. In The Joint Confer-
+ence of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th
+International Joint Conference on Natural Language Processing (ACL-IJCNLP 2021), 2021.
+[48] P. Lu, S. Mishra, T. Xia, L. Qiu, K.-W. Chang, S.-C. Zhu, O. Tafjord, P. Clark, and A. Kalyan.
+Learn to explain: Multimodal reasoning via thought chains for science question answering.
+Proc. of Neural Information Processing Systems, 35:2507–2521, 2022.
+[49] P. Lu, L. Qiu, K.-W. Chang, Y . N. Wu, S.-C. Zhu, T. Rajpurohit, P. Clark, and A. Kalyan.
+Dynamic prompt learning via policy gradient for semi-structured mathematical reasoning. In
+Proc. of International Conference on Learning Representations, 2023.
+[50] P. Lu, L. Qiu, J. Chen, T. Xia, Y . Zhao, W. Zhang, Z. Yu, X. Liang, and S.-C. Zhu. Iconqa:
+A new benchmark for abstract diagram understanding and visual language reasoning. In The
+35th Conference on Neural Information Processing Systems (NeurIPS) Track on Datasets and
+Benchmarks, 2021.
+[51] D. Luo, J. Huang, S. Gong, H. Jin, and Y . Liu. Towards generalisable video moment retrieval:
+Visual-dynamic injection to image-text pre-training. In Proc. of Computer Vision and Pattern
+Recognition, 2023.
+13
+
+[52] M. Maaz, H. Rasheed, S. Khan, and F. Khan. Videogpt+: Integrating image and video encoders
+for enhanced video understanding, 2024.
+[53] M. Maaz, H. Rasheed, S. Khan, and F. S. Khan. Video-chatgpt: Towards detailed video
+understanding via large vision and language models. In Proc. of IEEE International Conference
+on Automatic Face and Gesture Recognition, 2024.
+[54] M. Maaz, H. Rasheed, S. Khan, and F. S. Khan. Video-chatgpt: Towards detailed video
+understanding via large vision and language models. In Proceedings of the 62nd Annual
+Meeting of the Association for Computational Linguistics (ACL 2024), 2024.
+[55] K. Marino, M. Rastegari, A. Farhadi, and R. Mottaghi. Ok-vqa: A visual question answering
+benchmark requiring external knowledge. In Proc. of Computer Vision and Pattern Recognition,
+pages 3195–3204, 2019.
+[56] U.-V . Marti and H. Bunke. The iam-database: An english sentence database for offline hand-
+writing recognition. International Journal on Document Analysis and Recognition, 5:39–46, 11
+2002.
+[57] A. Masry, D. Long, J. Q. Tan, S. Joty, and E. Hoque. ChartQA: A benchmark for question
+answering about charts with visual and logical reasoning. In Proc. of IEEE International
+Conference on Automatic Face and Gesture Recognition, pages 2263–2279, Dublin, Ireland,
+May 2022. Association for Computational Linguistics.
+[58] A. Masry, D. X. Long, J. Q. Tan, S. Joty, and E. Hoque. Chartqa: A benchmark for question
+answering about charts with visual and logical reasoning. arXiv preprint arXiv:2203.10244,
+2022.
+[59] A. Masry, D. X. Long, J. Q. Tan, S. Joty, and E. Hoque. Chartqa: A benchmark for question
+answering about charts with visual and logical reasoning, 2022.
+[60] M. Mathew, V . Bagal, R. Tito, D. Karatzas, E. Valveny, and C. V . Jawahar. Infographicvqa. In
+Proc. of IEEE Winter Conference on Applications of Computer Vision, pages 2582–2591, 2022.
+[61] M. Mathew, D. Karatzas, and C. Jawahar. Docvqa: A dataset for vqa on document images.
+In Proceedings of the IEEE/CVF winter conference on applications of computer vision, pages
+2200–2209, 2021.
+[62] M. Mathew, D. Karatzas, and C. V . Jawahar. Docvqa: A dataset for vqa on document images. In
+Proc. of IEEE Winter Conference on Applications of Computer Vision, pages 2199–2208, 2021.
+[63] M. Mathew, D. Karatzas, and C. V . Jawahar. Docvqa: A dataset for vqa on document images,
+2021.
+[64] A. Mishra, S. Shekhar, A. K. Singh, and A. Chakraborty. Ocr-vqa: Visual question answering by
+reading text in images. In 2019 international conference on document analysis and recognition
+(ICDAR), pages 947–952. IEEE, 2019.
+[65] OpenAI. Gpt-4o. 2024.
+[66] M. Reid, N. Savinov, D. Teplyashin, D. Lepikhin, T. Lillicrap, J.-b. Alayrac, R. Soricut,
+A. Lazaridou, O. Firat, J. Schrittwieser, et al. Gemini 1.5: Unlocking multimodal understanding
+across millions of tokens of context. arXiv preprint arXiv:2403.05530, 2024.
+[67] S. Ren, L. Yao, S. Li, X. Sun, and L. Hou. Timechat: A time-sensitive multimodal large
+language model for long video understanding. arXiv preprint arXiv:2312.02051, 2023.
+[68] C. Schuhmann, R. Beaumont, R. Vencu, C. Gordon, R. Wightman, M. Cherti, T. Coombes,
+A. Katta, C. Mullis, M. Wortsman, et al. Laion-5b: An open large-scale dataset for training
+next generation image-text models. Advances in Neural Information Processing Systems ,
+35:25278–25294, 2022.
+[69] C. Schuhmann, R. Vencu, R. Beaumont, R. Kaczmarczyk, C. Mullis, A. Katta, T. Coombes,
+J. Jitsev, and A. Komatsuzaki. Laion-400m: Open dataset of clip-filtered 400 million image-text
+pairs. arXiv preprint arXiv:2111.02114, 2021.
+14
+
+[70] D. Schwenk, A. Khandelwal, C. Clark, K. Marino, and R. Mottaghi. A-okvqa: A benchmark
+for visual question answering using world knowledge. In Proc. of European Conference on
+Computer Vision, page 146–162, 2022.
+[71] N. Shazeer. Glu variants improve transformer, 2020.
+[72] A. Singh, V . Natarajan, M. Shah, Y . Jiang, X. Chen, D. Batra, D. Parikh, and M. Rohrbach.
+Towards vqa models that can read. In Proceedings of the IEEE/CVF conference on computer
+vision and pattern recognition, pages 8317–8326, 2019.
+[73] A. Singh, V . Natarajan, M. Shah, Y . Jiang, X. Chen, D. Batra, D. Parikh, and M. Rohrbach.
+Towards vqa models that can read. In Proc. of Computer Vision and Pattern Recognition, pages
+8317–8326, 2019.
+[74] Q. Sun, Y . Fang, L. Wu, X. Wang, and Y . Cao. Eva-clip: Improved training techniques for clip
+at scale. arXiv preprint arXiv:2303.15389, 2023.
+[75] B. J. Tang, A. Boggust, and A. Satyanarayan. VisText: A Benchmark for Semantically Rich
+Chart Captioning. In Proc. of IEEE International Conference on Automatic Face and Gesture
+Recognition, 2023.
+[76] S. Tong, E. Brown, P. Wu, S. Woo, M. Middepogu, S. C. Akula, J. Yang, S. Yang, A. Iyer,
+X. Pan, A. Wang, R. Fergus, Y . LeCun, and S. Xie. Cambrian-1: A fully open, vision-centric
+exploration of multimodal llms, 2024.
+[77] W. Wang, Z. He, W. Hong, Y . Cheng, X. Zhang, J. Qi, S. Huang, B. Xu, Y . Dong, M. Ding, et al.
+Lvbench: An extreme long video understanding benchmark. arXiv preprint arXiv:2406.08035,
+2024.
+[78] W. Wang, Q. Lv, W. Yu, W. Hong, J. Qi, Y . Wang, J. Ji, Z. Yang, L. Zhao, X. Song, et al.
+Cogvlm: Visual expert for pretrained language models. arXiv preprint arXiv:2311.03079, 2023.
+[79] Z. Wang, L. Wang, T. Wu, T. Li, and G. Wu. Negative sample matters: A renaissance of metric
+learning for temporal grounding. In Proc. of Association for the Advancement of Artificial
+Intelligence, 2022.
+[80] J. Xiao, X. Shang, A. Yao, and T. seng Chua. Next-qa: Next phase of question-answering to
+explaining temporal actions. In Proc. of Computer Vision and Pattern Recognition, 2021.
+[81] L. Xu, Y . Zhao, D. Zhou, Z. Lin, S. K. Ng, and J. Feng. PLLaV A: Parameter-free LLaV A
+extension from images to videos for video dense captioning, 2024.
+[82] A. Yang, A. Miech, J. Sivic, I. Laptev, and C. Schmid. Just ask: Learning to answer questions
+from millions of narrated videos. In Proc. of International Conference on Computer Vision,
+2021.
+[83] Y . Yao, T. Yu, A. Zhang, C. Wang, J. Cui, H. Zhu, T. Cai, H. Li, W. Zhao, Z. He, et al.
+Minicpm-v: A gpt-4v level mllm on your phone. arXiv preprint arXiv:2408.01800, 2024.
+[84] K. Yi, C. Gan, Y . Li, P. Kohli, J. Wu, A. Torralba, and J. B. Tenenbaum. Clevrer: Collision
+events for video representation and reasoning. In Proc. of International Conference on Learning
+Representations, 2020.
+[85] S. Yin, C. Fu, S. Zhao, K. Li, X. Sun, T. Xu, and E. Chen. A survey on multimodal large
+language models. arXiv preprint arXiv:2306.13549, 2023.
+[86] W. Yu, Z. Yang, L. Li, J. Wang, K. Lin, Z. Liu, X. Wang, and L. Wang. Mm-vet: Evaluating
+large multimodal models for integrated capabilities. arXiv preprint arXiv:2308.02490, 2023.
+[87] W. Yu, Z. Yang, L. Li, J. Wang, K. Lin, Z. Liu, X. Wang, and L. Wang. Mm-vet: Evaluating
+large multimodal models for integrated capabilities. In Proc. of International Conference on
+Machine Learning, 2024.
+15
+
+[88] X. Yue, Y . Ni, K. Zhang, T. Zheng, R. Liu, G. Zhang, S. Stevens, D. Jiang, W. Ren, Y . Sun,
+C. Wei, B. Yu, R. Yuan, R. Sun, M. Yin, B. Zheng, Z. Yang, Y . Liu, W. Huang, H. Sun, Y . Su,
+and W. Chen. Mmmu: A massive multi-discipline multimodal understanding and reasoning
+benchmark for expert agi. In Proc. of Computer Vision and Pattern Recognition, 2024.
+[89] C. Zhang, F. Gao, B. Jia, Y . Zhu, and S.-C. Zhu. Raven: A dataset for relational and analogical
+visual reasoning. In Proceedings of the IEEE Conference on Computer Vision and Pattern
+Recognition (CVPR), 2019.
+[90] H. Zhang, X. Li, and L. Bing. Video-llama: An instruction-tuned audio-visual language model
+for video understanding. arXiv preprint arXiv:2306.02858, 2023.
+[91] H. Zhang, P. Zhang, X. Hu, Y .-C. Chen, L. Li, X. Dai, L. Wang, L. Yuan, J.-N. Hwang, and
+J. Gao. Glipv2: Unifying localization and vision-language understanding. Proc. of Neural
+Information Processing Systems, 35:36067–36080, 2022.
+[92] T. Zhang, S. Wang, L. Li, G. Zhang, P. Taslakian, S. Rajeswar, J. Fu, B. Liu, and Y . Bengio.
+Vcr: Visual caption restoration. arXiv preprint arXiv:2406.06462, 2024.
+16
+
+A Details for Generating TQA Dataset
+In the generation pipeline, we first extract frames from the video and then use CogVLM2 for image
+captioning. The prompt for the image caption is shown below:
+Prompt for Image Caption
+Give out the detailed description of this image.
+Next, we use GPT-4o to evaluate the series of image captions for each video, identifying videos with
+significant scene content changes and filtering out those with minor scene content changes. The
+prompt for the scene filter is shown below:
+Prompt for Scene Filter
+We extracted several frames from this video and described each frame
+using an image caption model, stored in the dictionary variable
+‘image_captions: Dict[str:str]‘. In ‘image_captions‘, the key is the
+second at which the image appears in the video, and the value is a
+detailed description of the image at that moment. Our image captions may
+contain hallucinations and errors. If you find any information that
+seems incorrect, please ignore the erroneous information.
+image_captions={images_caption}
+Please determine whether there are significant scene changes in each
+second of the video based on the frame descriptions. If there are
+significant changes, output \"Yes\"; otherwise, output \"No\".For
+example, if the description continuously mentions a pool scene or a
+kitchen scene, then return \"No\". If the description first mentions an
+indoor scene and then a beach scene, then return \"Yes\". Output your
+final answers directly. Do not give out your reason.
+Finally, using a few-shot approach, GPT-4o generates time-related question-answer pairs based on
+the image captions. The prompt for question-answer generation is shown below:
+Prompt for Question-Answer Generation
+We extracted several frames from this video and described each frame
+using an image caption model, stored in the dictionary variable
+‘image_captions: Dict[str:str]‘. In ‘image_captions‘, the key is the
+second at which the image appears in the video, and the value is a
+detailed description of the image at that moment. You will play two
+roles: a human asking a question related to the biggest change in the
+video and an intelligent chatbot designed for video understanding.Your
+question and answer should be based on the information provided by
+‘image_captions‘.\n" "image_captions={images_caption}\nPlease generate
+the response in the form of a Python dictionary string with keys
+\"Human\" for question and \"Bot\" for answer. Each corresponding value
+should be the question and answer text respectively. For example, your
+response should look like this: {\"Human\": \"Your question here...\",
+\"Bot\": \"Your answer here...\"}. Do not mention variables like
+‘image_captions‘ in your response. Always generate the question and the
+answer as if you are directly looking at the video.The questions you
+generate should focus on the biggest scene change. Do not generate
+questions that can be easily answered from a single image. Here are some
+examples of what we expect:\nExample 1: {\"Human\": \"At what second
+does the girl appear?\", \"Bot\": \"The girl appears at the 3rd second
+in the video.\"}\nExample 2: {\"Human\": \"When does the video switch
+17
+
+from the swimming pool to the grass?\", \"Bot\": \"At the 3rd
+second.\"}\nExample 3: {\"Human\": \"When does a significant scene
+change occur in the video? \", \"Bot\": \"At the 10th second, the scene
+changes from the playground to the classroom.\"}\nIf you think it is not
+possible to generate such questions and answers from the given image
+captions, output \"None\" directly. Keep your answers concise and
+accurate and generate only one question and answer pair.
+B Qualitative Examples
+This section will demonstrate the capabilities of CogVLM2 in various scenarios. Figures 5, 6, 7, 8,9
+Show the perception and understanding ability of CogVLM2, while Figures 10, 11, 12, 12,13 exhibit
+Reasoning and Analysis.
+B.1 Perception and Understanding
+Text Recognition
+Prompt:
+请详细描述此户型图，包括各个房间的名称和大小。
+Figure 5: Image Case 1
+CogVLM2:
+户型图显示了一个住宅的平面布局。从左到右，上到下，我们可以看到如下房间和
+区域：
+-卧室C：位于左侧，面积为18.2平方米。
+- 门厅：位于中间，面积为14.7平方米。
+-卧室B：位于左侧，面积为8.2平方米。
+- 过道A：连接卧室B和门厅，面积为1.6平方米。
+-厨房：位于右侧，面积为7.6平方米。
+18
+
+-卫生间B：位于门厅旁边，面积为4.5平方米。
+- 客厅：位于右侧，面积为34.9平方米。
+-卫生间A：位于客厅旁边，面积为4.5平方米。
+-卧室A：位于左侧，面积为18.0平方米。
+- 阳台A：位于右侧，面积为7.0平方米。
+在户型图的左下角还有一个表示方向的罗盘，上面标注了“N”代表北。此外，图片的
+右下角有一个水印，显示为“房天下Fang.com”。
+Text Recognition
+Prompt:
+请详细描述此图像内容。
+Figure 6: Image Case 2
+CogVLM2:
+这是一幅展示了十二生肖的图片。图片上方有“十二生肖”四个大字，下方则是具体
+的十二生肖图案，每个生肖都由一个独特的图形表示。这些图形与常见的生肖符号
+相似，但又有所不同，可能是对传统生肖的现代艺术诠释。从左到右、从上到下，
+十二生肖依次为：鼠、牛、虎、兔、龙、蛇、马、羊、猴、鸡、狗、猪。
+Logo Recognition
+Prompt:
+Describe the image
+19
+
+Figure 7: Image Case 3
+CogVLM2:
+The image displays three distinct logos arranged in a row. From left to right, the logos are:
+1. The first logo is for BMW. It features a blue and white circular design with a black
+border. The blue and white colors are arranged in a quadrant pattern, with the blue sections
+forming a cross in the center. The BMW logo is a recognizable symbol for the German
+automobile manufacturer.
+2. The second logo is for Infiniti, a luxury vehicle division of Nissan. It consists of a
+stylized letter "Q" enclosed within a circular shape. The letter is split into two parts, with the
+top half pointing upwards and the bottom half pointing downwards, creating a unique and
+modern design.
+3. The third logo is for Maserati, an Italian luxury car manufacturer. It depicts a trident,
+which is a symbol of the Roman god Neptune, with the trident’s prongs pointing upwards.
+The trident is set against a black background, and the overall design is sleek and elegant,
+embodying the luxury and heritage of the Maserati brand.
+Information Extraction
+Prompt:
+Please read the text in this image and return the information in the following JSON for-
+mat (note xxx is placeholder, if the information is not available in the image, put "N/A"
+instead).{"Surname": xxx, "Given Name": xxx, "USCIS #": xxx, "Category": xxx, "Country
+of Birth": xxx, "Date of Birth": xxx, "SEX": xxx, "Card Expires": xxx, "Resident Since":
+xxx}
+Figure 8: Image Case 4
+CogVLM2:
+{"Surname": "STEVENS", "Given Name": "ICHIKA", "USCIS #": "000-000-000", "Cate-
+20
+
+gory": "IR1", "Country of Birth": "Japan", "Date of Birth": "18 AUG 1988", "SEX": "F",
+"Card Expires": "07/04/2027", "Resident Since": "07/05/2017"}
+Landmark Recognition
+Prompt:
+Describe the landmark in the image.
+Figure 9: Image Case 5
+CogVLM2:
+This image shows the Kinkaku-ji Temple, also known as the Golden Pavilion, located in
+Kyoto, Japan. The temple is a three-story Buddhist temple that is covered in gold leaf and
+sits on a pond, creating a stunning reflection on the water. The surrounding landscape is
+filled with trees and rocks, creating a peaceful and serene atmosphere. It is a popular tourist
+attraction and a designated National Special Historic Site.
+B.2 Reasoning and Analysis
+Image Analysis
+Prompt:
+请详细分析这张图片及其含义。
+21
+
+Figure 10: Image Case 6
+CogVLM2:
+这张图片展示了一个关于SOTA模型的投票场景。首先，有人提出“Who wants a SOTA
+model?”，然后大多数人都举手表示愿意。然而，接下来的问题是“Who wants to spend
+80% of their time reviewing/cleaning/filtering their data?”，只有少数人举手。图片的含义
+在于，虽然大多数人可能渴望使用最新的技术和模型，但他们可能不愿意投入大量
+的时间和精力来维护和准备数据，这可能是因为数据准备工作的复杂性和耗时性。
+Image Analysis and World Knowledge
+Prompt:
+哪个瓜最熟？给出理由
+22
+
+Figure 11: Image Case 7
+CogVLM2:
+根据图片，标号为9的瓜看起来最熟。它的底部有黄色，表皮上有明显的黑色斑点，
+这通常是成熟的迹象。
+Image Analysis and World Knowledge
+Prompt:
+Compare the average kinetic energies of the particles in each sample. The diagrams below
+show two pure samples of gas in identical closed, rigid containers. Each colored ball represents
+one gas particle. Both samples have the same number of particles. Which sample has the
+higher temperature? Sample A or sample B?
+23
+
+Figure 12: Image Case 8
+CogVLM2:
+To determine the temperature of a gas sample, we can use the formula for kinetic energy (KE),
+which is given by KE = 0.5 × m × v2, where m is the mass of the particle and v is its speed.
+Since both samples have particles with the same mass, the temperature will be determined
+by the average speed of the particles. Sample A has an average particle speed of 600 m/s,
+while Sample B has an average particle speed of 540 m/s. Therefore, Sample A has a higher
+average particle speed and, consequently, a higher average kinetic energy and temperature.
+Figure Analysis and Table generation
+Prompt:
+The data point that stands out is the United States’ landfilled plastic waste, which is 73%.
+This is significantly higher than the other countries and regions shown. This implies that the
+United States is not doing as much to recycle or incinerate its plastic waste as other countries
+and regions.
+24
+
+Figure 13: Image Case 9
+CogVLM2:
+One notable data point is the United States’ high percentage of landfilled plastic waste at
+73%. This stands out as it is significantly higher than other regions, implying that the US has
+a substantial portion of its plastic waste that is not recycled, incinerated, or managed in other
+ways. Here’s a markdown table for all the data shown:
+| Region | Landfilled | Mismanaged | Incinerated | Recycled |
+|—————————|————|————|————|————|
+| World | 49% | 22% | 19% | 9% |
+| United States | 73% | 4% | 19% | 4% |
+| Europe | 44% | 6% | 38% | 12% |
+| Asia (excl. China and India) | 39% | 34% | 19% | 8% |
+Meme Understanding
+Prompt:
+Can you explain this meme?
+25
+
+Figure 14: Image Case 10
+CogVLM2:
+Certainly! This meme is a humorous representation of the discrepancy between the ideal
+gaming experience and the limitations of one’s hardware. The top panel shows a character
+excitedly reaching out to a balloon labeled ’Game at 300 FPS’, symbolizing the desire to
+play a high frame rate game. The balloon is just out of reach, indicating that the character’s
+current monitor, labeled ’75 Hz Monitor’, can’t support such a high frame rate. The bottom
+panel shows the same character, now with sweat on their face, trying to reach the balloon with
+the help of another character labeled ’75 Hz Monitor’. This character is depicted as being
+larger and more imposing, suggesting that even with their assistance, the challenge remains
+too great. The meme humorously highlights the frustration gamers feel when they want to
+enjoy high frame rate games but are limited by their monitor’s refresh rate.
+B.3 Video Understanding
+Video Description
+Prompt:
+Describe this video in detail.
+Figure 15: Video Case 1
+26
+
+CogVLM2-Video:
+The video features a large, colorful tiger sculpture made of various materials such as feathers
+and fabric. The sculpture is seen in different poses on an urban street lined with buildings
+featuring Asian signage.Throughout the video, people are present, some walking by and other
+standing near the sculptures or shops. At one point, there’s a shower of pink petals that adds
+to the festive atmosphere. The scene captures a blend of traditional artistry and modern city
+life, creating a dynamic visual experience.
+Video Temporal Grounding
+Prompt:
+What is the highlight of this video? At what second does it happen?
+Figure 16: Video Case 2
+CogVLM2-Video:
+The highlight of the video is when the player in the green jersey makes a basket. It happens at
+the 4th second.
+C MVBench Results
+We show the detailed results on MVBench as below:
+Table 6: Video understanding performance comparison on MVBench [35]. Best results are bolded.
+Model A VG AA AC AL AP AS CO CI EN ER FA FP MA MC MD OE OI OS ST SC UA
+IG-VLM GPT4V [29] 43.7 72.0 39.0 40.5 63.5 55.5 52.0 11.0 31.0 59.0 46.5 47.5 22.5 12.0 12.0 18.5 59.0 29.5 83.5 45.0 73.5
+ST-LLM [44] 54.9 84.0 36.5 31.0 53.5 66.0 46.5 58.5 34.5 41.5 44.0 44.5 78.5 56.5 42.5 80.5 73.5 38.5 86.5 43.0 58.5
+ShareGPT4Video [12] 51.2 79.5 35.5 41.5 39.5 49.5 46.5 51.5 28.5 39.0 40.0 25.5 75.0 62.5 50.5 82.5 54.5 32.5 84.5 51.0 54.5
+VideoGPT+ [52] 58.7 83.0 39.5 34.0 60.0 69.0 50.0 60.0 29.5 44.0 48.5 53.0 90.5 71.0 44.0 85.5 75.5 36.0 89.5 45.0 66.5
+VideoChat2_HD_mistral [35] 62.3 79.5 60.0 87.5 50.0 68.5 93.5 71.5 36.5 45.0 49.5 87.0 40.0 76.0 92.0 53.0 62.0 45.5 36.0 44.0 69.5
+PLLaV A-34B [81] 58.1 82.0 40.5 49.5 53.0 67.5 66.5 59.0 39.5 63.5 47.0 50.0 70.0 43.0 37.5 68.5 67.5 36.5 91.0 51.5 79.0
+GPT-4o-2024-05-13 [65] 47.8 71.5 35.0 38.5 42.5 51.5 46.0 36.5 32.0 60.5 47.0 51.0 42.0 30.5 17.0 54.5 60.0 37.0 85.0 47.5 71.0
+Gemini 1.5 Pro [66] 52.6 55.0 32.0 50.0 56.0 66.0 51.0 46.5 29.0 62.0 41.5 59.0 56.5 41.5 34.5 57.0 73.0 41.0 84.0 44.0 74.0
+CogVLM2-Video (ours) 62.3 85.5 41.5 31.5 65.5 79.5 58.5 77.0 28.5 42.5 54.0 57.0 91.5 73.0 48.0 91.0 78.0 36.0 91.5 47.0 68.5
+GLM-4V-Plus (ours) 71.2 94.0 71.0 70.0 66.0 79.5 76.5 82.0 36.0 54.0 48.5 53.5 97.5 86.5 55.5 95.5 80.0 37.5 91.0 77.5 72.0
+27

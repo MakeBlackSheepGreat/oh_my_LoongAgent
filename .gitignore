@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.harness-data/
+.bvar-data/
+web/node_modules/
+web/dist/
+.env
+dist/
+
+# 嵌套子项目（含独立 git 历史，不入主仓库）
+ppt-master/
+
+# 工具产物
+.playwright/
+.playwright-cli/
+output/
+
+# 构建残留与运行时日志
+server.exe
+*.log
+small_model_agent_harness.egg-info/
+
+# 本地工具状态目录（不随主仓库分发）
+.reasonix/
+.sisyphus/
+.trae/
+.workbuddy/
