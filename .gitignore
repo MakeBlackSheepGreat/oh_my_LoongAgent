@@ -26,3 +26,6 @@ small_model_agent_harness.egg-info/
 .sisyphus/
 .trae/
 .workbuddy/
+
+# 参考文献 PDF（外部资产，来源见 ATTRIBUTIONS.md，按需本地保留，不随仓库分发）
+literature_archive/**/*.pdf
