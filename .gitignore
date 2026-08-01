@@ -5,7 +5,6 @@ __pycache__/
 .bvar-data/
 web/node_modules/
 web/dist/
-.env
 dist/
 
 # 嵌套子项目（含独立 git 历史，不入主仓库）
@@ -27,5 +26,21 @@ small_model_agent_harness.egg-info/
 .trae/
 .workbuddy/
 
+# 密钥与凭据（只保留占位示例，如 .env.example）
+.env
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+*.token
+*.secret
+
 # 参考文献 PDF（外部资产，来源见 ATTRIBUTIONS.md，按需本地保留，不随仓库分发）
 literature_archive/**/*.pdf
+
+# 素材压缩包（examples/ 目录已含展开内容，压缩包按需本地保留）
+*.7z
